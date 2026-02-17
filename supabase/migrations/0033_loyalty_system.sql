@@ -3,7 +3,7 @@
 
 create table if not exists public.loyalty_referrals (
   id uuid primary key default gen_random_uuid(),
-  referrer_id uuid references public.clients(id) on delete cascade,
+  referrer_id uuid references public.customers(id) on delete cascade,
   referrer_name text not null, -- Name for fallback if client_id is null
   referred_name text not null, -- Name of the friend being referred
   referred_phone text not null, -- Phone number of the friend

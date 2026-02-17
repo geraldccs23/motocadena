@@ -1,0 +1,28 @@
+version: "3.7"
+
+services:
+  motocadena-admin:
+    image: node:20
+    working_dir: /app
+    volumes:
+      - /var/www/motocadena/backend:/app
+    command: ["sh", "-lc", "npm install --omit=dev && node server.js"]
+    environment:
+      - NODE_ENV=production
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - PORT=3001
+    networks:
+      - geraldnet
+    deploy:
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.motocadena-admin.rule=Host(`api.motocadena.com`)"
+        - "traefik.http.routers.motocadena-admin.entrypoints=web,websecure"
+        - "traefik.http.routers.motocadena-admin.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.motocadena-admin.loadbalancer.server.port=3001"
+
+networks:
+  geraldnet:
+    external: true

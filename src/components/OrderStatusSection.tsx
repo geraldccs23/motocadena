@@ -16,10 +16,12 @@ const OrderStatusSection: React.FC = () => {
 
     const getStatusVariant = (status: string) => {
         switch (status) {
-            case 'completed': return 'success';
-            case 'in_progress': return 'info';
-            case 'pending': return 'warning';
-            case 'cancelled': return 'danger';
+            case 'DELIVERED':
+            case 'READY': return 'success';
+            case 'IN_PROGRESS':
+            case 'APPROVED': return 'info';
+            case 'DRAFT': return 'warning';
+            case 'CANCELED': return 'danger';
             default: return 'default';
         }
     };
@@ -74,15 +76,15 @@ const OrderStatusSection: React.FC = () => {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-xs text-zinc-500 uppercase">Marca</p>
-                                                <p className="text-lg font-bold text-white">{result.client?.vehicle_brand || '—'}</p>
+                                                <p className="text-lg font-bold text-white">{result.vehicle?.brand || '—'}</p>
                                             </div>
                                             <div>
                                                 <p className="text-xs text-zinc-500 uppercase">Modelo</p>
-                                                <p className="text-lg font-bold text-white">{result.client?.vehicle_model || '—'}</p>
+                                                <p className="text-lg font-bold text-white">{result.vehicle?.model || '—'}</p>
                                             </div>
                                             <div className="col-span-2">
                                                 <p className="text-xs text-zinc-500 uppercase">Propietario</p>
-                                                <p className="text-lg font-bold text-white">{result.client?.full_name || '—'}</p>
+                                                <p className="text-lg font-bold text-white">{result.customer?.full_name || '—'}</p>
                                             </div>
                                         </div>
                                     </div>

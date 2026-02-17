@@ -2,11 +2,14 @@ import { useState, useCallback } from 'react';
 import { ADMIN_BASE } from '../lib/api';
 
 export interface PlateLookupResult {
-    client?: {
+    customer?: {
         full_name?: string;
-        vehicle_plate?: string;
-        vehicle_brand?: string;
-        vehicle_model?: string;
+        id?: string;
+    };
+    vehicle?: {
+        plate?: string;
+        brand?: string;
+        model?: string;
         id?: string;
     };
     order?: {

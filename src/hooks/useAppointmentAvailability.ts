@@ -64,7 +64,7 @@ export function useAppointmentAvailability(serviceId?: string) {
             // Fallback logic for availability using Supabase
             try {
                 const selectedService = services.find(s => s.id === serviceId);
-                const duration = Math.max(30, Number(selectedService?.duration_minutes ?? 60));
+                const duration = Math.max(30, Number(selectedService?.estimated_duration_min ?? 60));
 
                 const start = new Date(dateStr + 'T00:00');
                 const end = new Date(dateStr + 'T00:00');

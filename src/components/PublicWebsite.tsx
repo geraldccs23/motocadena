@@ -1,21 +1,42 @@
 import React from 'react';
-import { Shield, Zap, LogIn } from 'lucide-react';
-import BookingSection from './BookingSection';
-import OrderStatusSection from './OrderStatusSection';
+import { Shield, Zap, LogIn, Menu, X, MapPin } from 'lucide-react';
 import ServicesSection from './ServicesSection';
+import ShopSection from './ShopSection';
 import Badge from './ui/Badge';
 import Button from './ui/Button';
 import Card, { CardContent } from './ui/Card';
 import LoyaltySection from './loyalty/LoyaltySection';
 
 interface PublicWebsiteProps {
-  onNavigateToPanel: () => void;
   onNavigateToSponsors?: () => void;
+  onNavigateToAdmin?: () => void;
+  onNavigateToScooter?: () => void;
+  initialSection?: string;
 }
 
 const PublicWebsite: React.FC<PublicWebsiteProps> = ({
-  onNavigateToPanel,
+  onNavigateToSponsors,
+  onNavigateToAdmin,
+  onNavigateToScooter,
+  initialSection,
 }) => {
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (initialSection) {
+      const el = document.getElementById(initialSection);
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    }
+  }, [initialSection]);
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const closeMenu = () => setIsMenuOpen(false);
+
+  const GOOGLE_MAPS_LINK = "https://share.google/3zEAYmrfX5fD0QTSV";
   return (
     <div className="min-h-screen bg-black text-zinc-100 selection:bg-amber-500 selection:text-black">
       {/* Header / Navbar */}
@@ -31,22 +52,54 @@ const PublicWebsite: React.FC<PublicWebsiteProps> = ({
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-widest">
+          <nav className="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-white">
             <a href="#servicios" className="text-zinc-400 hover:text-amber-500 transition-colors">Servicios</a>
+            <a href="#tienda" className="text-zinc-400 hover:text-amber-500 transition-colors">Tienda</a>
+            <button onClick={onNavigateToScooter} className="text-zinc-400 hover:text-amber-500 transition-colors flex items-center gap-1.5 whitespace-nowrap">
+              <span className="text-amber-500 italic font-black">SCOOTER</span>
+            </button>
             <a href="#membresias" className="text-zinc-400 hover:text-amber-500 transition-colors">Membresías</a>
             <a href="#lealtad" className="text-zinc-400 hover:text-amber-500 transition-colors">Lealtad</a>
-            <a href="#consulta" className="text-zinc-400 hover:text-amber-500 transition-colors">Consulta</a>
-            <Button variant="outline" size="sm" onClick={onNavigateToPanel} className="gap-2">
+            <Button variant="outline" size="sm" onClick={onNavigateToAdmin} className="gap-2">
               <LogIn className="w-3.5 h-3.5" />
               ACCESO STAFF
             </Button>
           </nav>
 
-          <Button variant="ghost" size="icon" className="md:hidden" onClick={onNavigateToPanel}>
-            <LogIn className="w-5 h-5" />
-          </Button>
+          {/* Mobile Menu Toggle */}
+          <button
+            className="md:hidden p-2 text-zinc-400 hover:text-amber-500 transition-colors"
+            onClick={toggleMenu}
+          >
+            {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
         </div>
       </header>
+
+      {/* Mobile Menu Overlay */}
+      <div className={`fixed inset-0 top-20 bg-zinc-950 z-[100] md:hidden transition-all duration-300 border-t border-zinc-800 overflow-y-auto ${isMenuOpen ? 'opacity-100 pointer-events-auto translate-y-0' : 'opacity-0 pointer-events-none -translate-y-4'}`}>
+        <div className="flex flex-col p-8 gap-8 items-center text-center min-h-[calc(100vh-5rem)] justify-center">
+          <a href="#servicios" onClick={closeMenu} className="text-2xl font-black heading-racing tracking-widest text-zinc-400 hover:text-amber-500">SERVICIOS</a>
+          <a href="#tienda" onClick={closeMenu} className="text-2xl font-black heading-racing tracking-widest text-zinc-400 hover:text-amber-500">TIENDA</a>
+          <button onClick={() => { onNavigateToScooter?.(); closeMenu(); }} className="text-2xl font-black heading-racing tracking-widest text-amber-500 italic">SCOOTER</button>
+          <a href="#membresias" onClick={closeMenu} className="text-2xl font-black heading-racing tracking-widest text-zinc-400 hover:text-amber-500">MEMBRESÍAS</a>
+          <a href="#lealtad" onClick={closeMenu} className="text-2xl font-black heading-racing tracking-widest text-zinc-400 hover:text-amber-500">LEALTAD</a>
+          <div className="w-full h-px bg-zinc-800 my-4" />
+          <Button size="lg" variant="primary" onClick={onNavigateToAdmin} className="w-full gap-3 h-16 text-xl tracking-widest">
+            <LogIn size={24} />
+            ACCESO STAFF
+          </Button>
+          <a
+            href={GOOGLE_MAPS_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-zinc-500 mt-4"
+          >
+            <MapPin size={16} className="text-amber-500" />
+            Ubicación en Google Maps
+          </a>
+        </div>
+      </div>
 
       {/* Hero Section */}
       <section className="relative pt-40 pb-32 px-4 overflow-hidden">
@@ -66,11 +119,11 @@ const PublicWebsite: React.FC<PublicWebsiteProps> = ({
             Servicio profesional con tecnología de vanguardia y pasión por la velocidad.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" className="w-full sm:w-auto px-10 h-14 text-sm font-black tracking-widest" onClick={() => document.getElementById('agendar')?.scrollIntoView({ behavior: 'smooth' })}>
-              AGENDAR SERVICIO
+            <Button size="lg" className="w-full sm:w-auto px-10 h-14 text-sm font-black tracking-widest" onClick={() => document.getElementById('servicios')?.scrollIntoView({ behavior: 'smooth' })}>
+              VER SERVICIOS
             </Button>
-            <Button variant="outline" size="lg" className="w-full sm:w-auto px-10 h-14 text-sm font-black tracking-widest" onClick={() => document.getElementById('servicios')?.scrollIntoView({ behavior: 'smooth' })}>
-              VER CATÁLOGO
+            <Button variant="outline" size="lg" className="w-full sm:w-auto px-10 h-14 text-sm font-black tracking-widest" onClick={() => window.open('https://wa.me/584147131270', '_blank')}>
+              WHATSAPP
             </Button>
           </div>
         </div>
@@ -107,11 +160,7 @@ const PublicWebsite: React.FC<PublicWebsiteProps> = ({
       {/* Modular Sections */}
       <ServicesSection />
 
-      <div id="agendar">
-        <BookingSection />
-      </div>
-
-      <OrderStatusSection />
+      <ShopSection />
 
       <LoyaltySection />
 
@@ -170,10 +219,21 @@ const PublicWebsite: React.FC<PublicWebsiteProps> = ({
             </div>
             <div>
               <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white mb-6">Ubicación</h4>
-              <p className="text-zinc-500 text-sm leading-relaxed">
-                Parcelamiento El Carmelo, Galpon 1, Entrando por la Bomba de la Cocada <br />
-                Zona Industrial Las Flores, Guatire.
-              </p>
+              <a
+                href={GOOGLE_MAPS_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block"
+              >
+                <p className="text-zinc-500 text-sm leading-relaxed group-hover:text-amber-500 transition-colors">
+                  Parcelamiento El Carmelo, Galpon 1, Entrando por la Bomba de la Cocada <br />
+                  Zona Industrial Las Flores, Guatire.
+                </p>
+                <div className="mt-3 flex items-center gap-2 text-amber-500 text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all">
+                  <MapPin size={12} />
+                  Abrir en Google Maps
+                </div>
+              </a>
             </div>
             <div>
               <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white mb-6">Contacto</h4>
@@ -185,10 +245,9 @@ const PublicWebsite: React.FC<PublicWebsiteProps> = ({
           </div>
           <div className="pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between gap-4">
             <p className="text-[10px] text-zinc-600 uppercase tracking-widest">© 2024 MOTOCADENA. TODOS LOS DERECHOS RESERVADOS.</p>
-            <div className="flex gap-6">
-              <a href="#" className="text-[10px] text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold">Privacidad</a>
-              <a href="#" className="text-[10px] text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold">Términos</a>
-            </div>
+            <a href="#" onClick={(e) => { e.preventDefault(); onNavigateToSponsors?.(); }} className="text-[10px] text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold font-bold">Patrocinadores</a>
+            <a href="#" className="text-[10px] text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold">Privacidad</a>
+            <a href="#" className="text-[10px] text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold">Términos</a>
           </div>
         </div>
       </footer>

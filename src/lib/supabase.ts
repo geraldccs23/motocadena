@@ -1,15 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./database.types";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!;
+// Standardizing on hardcoded keys for production stability across all modules
+const supabaseUrl = 'https://supabase.motocadena.com';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogImFub24iLAogICJpc3MiOiAic3VwYWJhc2UiLAogICJpYXQiOiAxNzE1MDUwODAwLAogICJleHAiOiAxODcyODE3MjAwCn0.yB_Jg-uxHi2JeYTEHDavqSVVvASIEFEpf6xiVwDxs38';
 
-// Importante: habilitar sesión persistente para que las operaciones de escritura
-// lleven el Bearer token y pasen las políticas RLS autenticadas.
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     detectSessionInUrl: true,
     autoRefreshToken: true,
+    storage: window.localStorage
   },
 });

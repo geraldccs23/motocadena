@@ -1,56 +1,31 @@
-import { useState, useEffect } from 'react';
-import Login from './components/Login';
-import Dashboard from './components/Dashboard';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import PublicWebsite from './components/PublicWebsite';
 import SponsorsPresentation from './components/SponsorsPresentation';
-import { getCurrentUser } from './lib/auth';
-import type { User } from './lib/auth';
+import ScooterPage from './components/ScooterPage';
+import PublicBudgetView from './components/PublicBudgetView';
 
-type View = 'public' | 'login' | 'dashboard' | 'sponsors';
+const AdminApp = lazy(() => import('./admin/AdminApp'));
 
 function App() {
-  const [currentView, setCurrentView] = useState<View>('public');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Set initial view from pathname if not authenticated yet
-    const path = window.location.pathname.replace(/\/+$/, '');
-    if (path === '/sponsors') {
-      setCurrentView('sponsors');
-    }
-    checkUser();
+    setIsLoading(false);
   }, []);
 
-  const checkUser = async () => {
-    const user = await getCurrentUser();
-    if (user) {
-      setCurrentUser(user);
-      setCurrentView('dashboard');
-    }
-    setIsLoading(false);
-  };
-
-  const handleLoginSuccess = (user: User) => {
-    setCurrentUser(user);
-    setCurrentView('dashboard');
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setCurrentView('public');
-  };
-
-  const handleNavigateToPanel = () => {
-    setCurrentView('login');
-  };
-
   const handleNavigateToSponsors = () => {
-    setCurrentView('sponsors');
-    const href = '/sponsors';
-    if (window.location.pathname !== href) {
-      window.history.pushState({}, '', href);
-    }
+    navigate('/sponsors');
+  };
+
+
+  const handleNavigateToScooter = () => {
+    navigate('/scooter');
+  };
+
+  const handleNavigateToAdmin = () => {
+    navigate('/admin');
   };
 
   if (isLoading) {
@@ -61,19 +36,24 @@ function App() {
     );
   }
 
-  if (currentView === 'public') {
-    return <PublicWebsite onNavigateToPanel={handleNavigateToPanel} onNavigateToSponsors={handleNavigateToSponsors} />;
-  }
-
-  if (currentView === 'sponsors') {
-    return <SponsorsPresentation />;
-  }
-
-  if (currentView === 'login' || !currentUser) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
-  }
-
-  return <Dashboard user={currentUser} onLogout={handleLogout} />;
+  return (
+    <Routes>
+      <Route path="/" element={<PublicWebsite onNavigateToSponsors={handleNavigateToSponsors} onNavigateToAdmin={handleNavigateToAdmin} onNavigateToScooter={handleNavigateToScooter} />} />
+      <Route path="/tienda" element={<PublicWebsite onNavigateToSponsors={handleNavigateToSponsors} onNavigateToAdmin={handleNavigateToAdmin} onNavigateToScooter={handleNavigateToScooter} initialSection="tienda" />} />
+      <Route path="/sponsors" element={<SponsorsPresentation />} />
+      <Route path="/scooter" element={<ScooterPage />} />
+      <Route path="/presupuesto/:id" element={<PublicBudgetView />} />
+      <Route path="/admin/*" element={
+        <Suspense fallback={
+          <div className="h-screen w-full flex items-center justify-center bg-black text-amber-500 font-bold">
+            CARGANDO PANEL...
+          </div>
+        }>
+          <AdminApp />
+        </Suspense>
+      } />
+    </Routes>
+  );
 }
 
 export default App;

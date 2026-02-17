@@ -137,7 +137,7 @@ const BookingSection: React.FC = () => {
                                 >
                                     <option value="">Selecciona un servicio</option>
                                     {services.map(s => (
-                                        <option key={s.id} value={s.id}>{s.name} - ${s.base_price}</option>
+                                        <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
                                     ))}
                                 </select>
                             </div>

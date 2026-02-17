@@ -1,0 +1,138 @@
+-- 0040_budgets.sql
+-- Módulo de Presupuestos para Motocadena
+
+begin;
+
+-- Tipos enumerados para estados de presupuesto
+do $$ begin
+  if not exists (select 1 from pg_type where typname = 'budget_status') then
+    create type budget_status as enum ('DRAFT', 'SENT', 'APPROVED', 'REJECTED', 'EXPIRED');
+  end if;
+end $$;
+
+-- Función genérica para actualización de updated_at (por seguridad se redefine si no existe)
+create or replace function public.set_timestamp_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+-- Tabla de Presupuestos
+create sequence if not exists public.budgets_number_seq;
+
+create table if not exists public.budgets (
+  id uuid primary key default gen_random_uuid(),
+  budget_number bigint unique default nextval('public.budgets_number_seq'::regclass),
+  workshop_id uuid references public.workshops(id) on delete set null,
+  customer_id uuid references public.customers(id) on delete cascade,
+  vehicle_id uuid references public.vehicles(id) on delete set null,
+  status budget_status not null default 'DRAFT',
+  valid_until timestamptz,
+  notes text,
+  total_amount numeric(10,2) not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- Indexación para búsqueda rápida
+create index if not exists idx_budgets_customer on public.budgets(customer_id);
+create index if not exists idx_budgets_status on public.budgets(status);
+create index if not exists idx_budgets_number on public.budgets(budget_number);
+
+-- Tabla de Items del Presupuesto (Servicios y Productos)
+create table if not exists public.budget_items (
+  id uuid primary key default gen_random_uuid(),
+  budget_id uuid not null references public.budgets(id) on delete cascade,
+  service_id uuid references public.services(id) on delete set null,
+  product_id uuid references public.products(id) on delete set null,
+  description text not null,
+  quantity numeric(10,2) not null default 1,
+  unit_price numeric(10,2) not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint budget_item_content check (
+    (service_id is not null or product_id is not null or description is not null)
+  )
+);
+
+create index if not exists idx_budget_items_budget on public.budget_items(budget_id);
+
+-- Habilitar RLS
+alter table public.budgets enable row level security;
+alter table public.budget_items enable row level security;
+
+-- Políticas RLS (Acceso para usuarios autenticados)
+do $$
+begin
+  -- Budgets
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='budgets' and policyname='auth_select_budgets') then
+    create policy auth_select_budgets on public.budgets for select to authenticated using (true);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='budgets' and policyname='auth_insert_budgets') then
+    create policy auth_insert_budgets on public.budgets for insert to authenticated with check (true);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='budgets' and policyname='auth_update_budgets') then
+    create policy auth_update_budgets on public.budgets for update to authenticated using (true) with check (true);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='budgets' and policyname='auth_delete_budgets') then
+    create policy auth_delete_budgets on public.budgets for delete to authenticated using (true);
+  end if;
+
+  -- Budget Items
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='budget_items' and policyname='auth_select_budget_items') then
+    create policy auth_select_budget_items on public.budget_items for select to authenticated using (true);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='budget_items' and policyname='auth_insert_budget_items') then
+    create policy auth_insert_budget_items on public.budget_items for insert to authenticated with check (true);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='budget_items' and policyname='auth_update_budget_items') then
+    create policy auth_update_budget_items on public.budget_items for update to authenticated using (true) with check (true);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='budget_items' and policyname='auth_delete_budget_items') then
+    create policy auth_delete_budget_items on public.budget_items for delete to authenticated using (true);
+  end if;
+end $$;
+
+-- Triggers para updated_at
+create trigger trg_budgets_set_updated
+before update on public.budgets
+for each row execute function public.set_timestamp_updated_at();
+
+create trigger trg_budget_items_set_updated
+before update on public.budget_items
+for each row execute function public.set_timestamp_updated_at();
+
+-- Función para recalcular el total del presupuesto
+create or replace function public.recalc_budget_total()
+returns trigger as $$
+declare
+  bid uuid;
+begin
+  bid := coalesce(NEW.budget_id, OLD.budget_id);
+  update public.budgets b
+  set total_amount = coalesce((
+    select sum(i.quantity * i.unit_price)
+    from public.budget_items i
+    where i.budget_id = b.id
+  ), 0)
+  where b.id = bid;
+  return NEW;
+end;
+$$ language plpgsql;
+
+-- Triggers de recalculo de total
+create trigger trg_budget_total_ins
+after insert on public.budget_items
+for each row execute function public.recalc_budget_total();
+
+create trigger trg_budget_total_upd
+after update on public.budget_items
+for each row execute function public.recalc_budget_total();
+
+create trigger trg_budget_total_del
+after delete on public.budget_items
+for each row execute function public.recalc_budget_total();
+
+commit;

@@ -7,13 +7,14 @@ export function useProducts() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [pagination, setPagination] = useState({ totalItems: 0, totalPages: 0, currentPage: 1, limit: 10 });
 
-    const loadProducts = useCallback(async () => {
+    const loadProducts = useCallback(async (page = 1, limit = 10) => {
         setLoading(true);
         setError(null);
         try {
-            // Usar el endpoint de stock que ya concatena info de productos y cantidad real
-            const resp = await fetch(`${ADMIN_BASE}/admin/inventory/stock`, {
+            // Usar el endpoint de stock con paginación
+            const resp = await fetch(`${ADMIN_BASE}/admin/inventory/stock?page=${page}&limit=${limit}`, {
                 headers: { 'X-Role': 'admin' }
             });
             if (!resp.ok) throw new Error(`Backend fetch failed: ${resp.status}`);
@@ -31,8 +32,12 @@ export function useProducts() {
             }));
 
             setProducts(mapped);
+            if (json.pagination) {
+                setPagination(json.pagination);
+            }
         } catch (err: any) {
             console.warn('Backend stock fetch failed, trying Supabase products:', err.message);
+            // Fallback for direct Supabase access (without pagination for now)
             try {
                 const { data, error: sErr } = await supabase
                     .from('products')
@@ -69,7 +74,7 @@ export function useProducts() {
                 throw new Error(errorTxt || `HTTP Error ${resp.status}`);
             }
 
-            await loadProducts();
+            await loadProducts(pagination.currentPage, pagination.limit);
             return { success: true };
         } catch (err: any) {
             console.error('Save product error:', err);
@@ -81,7 +86,7 @@ export function useProducts() {
                     const { error: sErr } = await (supabase.from('products' as any) as any).insert([productData]);
                     if (sErr) throw sErr;
                 }
-                await loadProducts();
+                await loadProducts(pagination.currentPage, pagination.limit);
                 return { success: true };
             } catch (fallbackErr: any) {
                 return { success: false, error: fallbackErr.message };
@@ -102,13 +107,13 @@ export function useProducts() {
 
             if (!resp.ok) throw new Error(`HTTP Error ${resp.status}`);
 
-            await loadProducts();
+            await loadProducts(pagination.currentPage, pagination.limit);
             return { success: true };
         } catch (err: any) {
             try {
                 const { error: sErr } = await (supabase.from('products' as any) as any).delete().match({ id });
                 if (sErr) throw sErr;
-                await loadProducts();
+                await loadProducts(pagination.currentPage, pagination.limit);
                 return { success: true };
             } catch (sErr: any) {
                 return { success: false, error: sErr.message };
@@ -125,7 +130,7 @@ export function useProducts() {
             });
 
             if (!resp.ok) throw new Error(await resp.text());
-            await loadProducts();
+            await loadProducts(pagination.currentPage, pagination.limit);
             return { success: true };
         } catch (err: any) {
             return { success: false, error: err.message };
@@ -140,6 +145,7 @@ export function useProducts() {
         products,
         loading,
         error,
+        pagination,
         refresh: loadProducts,
         saveProduct,
         deleteProduct,

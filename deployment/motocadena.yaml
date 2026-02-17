@@ -1,0 +1,42 @@
+version: "3.7"
+
+services:
+  frontend:
+    image: nginx:alpine
+    volumes:
+      - /var/www/motocadena/dist:/usr/share/nginx/html:ro
+      - /root/motocadena_nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - geraldnet
+    deploy:
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.motocadena-frontend.rule=Host(`motocadena.com`) || Host(`www.motocadena.com`)"
+        - "traefik.http.routers.motocadena-frontend.entrypoints=web,websecure"
+        - "traefik.http.routers.motocadena-frontend.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.motocadena-frontend.loadbalancer.server.port=80"
+
+  admin:
+    image: node:20
+    working_dir: /app
+    volumes:
+      - /var/www/motocadena/backend:/app
+    command: ["sh", "-lc", "npm install --omit=dev && node server.js"]
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    networks:
+      - geraldnet
+    deploy:
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.motocadena-admin.rule=Host(`api.motocadena.com`)"
+        - "traefik.http.routers.motocadena-admin.entrypoints=web,websecure"
+        - "traefik.http.routers.motocadena-admin.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.motocadena-admin.loadbalancer.server.port=3001"
+
+networks:
+  geraldnet:
+    external: true

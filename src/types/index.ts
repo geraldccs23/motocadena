@@ -87,17 +87,30 @@ export interface PosPayment {
     created_at?: string;
 }
 
+export interface ProductCategory {
+    id: string;
+    name: string;
+    slug: string;
+    description?: string | null;
+    image_url?: string | null;
+    is_active: boolean;
+}
+
 export interface Product {
     id?: string;
     sku: string;
     name: string;
+    slug?: string | null;
     description?: string | null;
     brand?: string | null;
     supplier_code?: string | null;
     oem_code?: string | null;
     unit_price: number;
     unit_cost: number;
-    status: 'active' | 'inactive';
+    status?: 'active' | 'inactive';
+    is_ecommerce?: boolean;
+    is_featured?: boolean;
+    category_id?: string | null;
     stock?: number;
     created_at?: string;
 }

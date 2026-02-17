@@ -9,282 +9,256 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      appointments: {
+      workshops: {
         Row: {
           id: string
-          client_id: string
-          service_id: string | null
-          assigned_mechanic_id: string | null
-          scheduled_at: string
-          duration_minutes: number
-          status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled'
-          notes: string | null
-          total: number
+          name: string
+          slug: string
+          address: string | null
+          phone: string | null
+          config: Json | null
           created_at: string
           updated_at: string
-          appointment_number: number
         }
         Insert: {
           id?: string
-          client_id: string
-          service_id?: string | null
-          assigned_mechanic_id?: string | null
-          scheduled_at: string
-          duration_minutes?: number
-          status?: 'scheduled' | 'confirmed' | 'completed' | 'cancelled'
-          notes?: string | null
-          total?: number
+          name: string
+          slug: string
+          address?: string | null
+          phone?: string | null
+          config?: Json | null
           created_at?: string
           updated_at?: string
-          appointment_number?: number
         }
         Update: {
           id?: string
-          client_id?: string
-          service_id?: string | null
-          assigned_mechanic_id?: string | null
-          scheduled_at?: string
-          duration_minutes?: number
-          status?: 'scheduled' | 'confirmed' | 'completed' | 'cancelled'
-          notes?: string | null
-          total?: number
+          name?: string
+          slug?: string
+          address?: string | null
+          phone?: string | null
+          config?: Json | null
           created_at?: string
           updated_at?: string
-          appointment_number?: number
         }
       }
-      users: {
+      user_profiles: {
         Row: {
           id: string
+          workshop_id: string | null
           full_name: string
-          username: string
-          password: string
-          role: 'admin' | 'mechanic' | 'receptionist'
-          phone: string | null
+          role: 'ADMINISTRADOR' | 'DIRECTOR' | 'GERENTE_GENERAL' | 'VENDEDOR' | 'CAJERO' | 'MECANICO' | 'AYUDANTE_MECANICO' | 'ASESOR'
+          is_active: boolean
+          created_at: string
+          updated_at: string
+          birth_date: string | null
           email: string | null
-          status: 'active' | 'inactive'
-          created_at: string
+          phone: string | null
+          commission_rate: number
         }
         Insert: {
-          id?: string
+          id: string
+          workshop_id?: string | null
           full_name: string
-          username: string
-          password: string
-          role: 'admin' | 'mechanic' | 'receptionist'
-          phone?: string | null
-          email?: string | null
-          status?: 'active' | 'inactive'
+          role?: string
+          is_active?: boolean
           created_at?: string
+          updated_at?: string
+          birth_date?: string | null
+          email?: string | null
+          phone?: string | null
         }
         Update: {
           id?: string
+          workshop_id?: string | null
           full_name?: string
-          username?: string
-          password?: string
-          role?: 'admin' | 'mechanic' | 'receptionist'
-          phone?: string | null
-          email?: string | null
-          status?: 'active' | 'inactive'
+          role?: string
+          is_active?: boolean
           created_at?: string
+          updated_at?: string
+          birth_date?: string | null
+          email?: string | null
+          phone?: string | null
+          commission_rate?: number
         }
       }
-      clients: {
+      customers: {
         Row: {
           id: string
-          full_name: string
+          workshop_id: string | null
+          first_name: string
+          last_name: string
+          id_number: string | null
+          email: string | null
           phone: string
-          vehicle_plate: string | null
-          vehicle_brand: string | null
-          vehicle_model: string | null
+          address: string | null
+          referred_by_customer_id: string | null
+          is_vip: boolean
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
-          full_name: string
+          workshop_id?: string | null
+          first_name: string
+          last_name: string
+          id_number?: string | null
+          email?: string | null
           phone: string
-          vehicle_plate?: string | null
-          vehicle_brand?: string | null
-          vehicle_model?: string | null
+          address?: string | null
+          referred_by_customer_id?: string | null
+          is_vip?: boolean
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
-          full_name?: string
+          workshop_id?: string | null
+          first_name?: string
+          last_name?: string
+          id_number?: string | null
+          email?: string | null
           phone?: string
-          vehicle_plate?: string | null
-          vehicle_brand?: string | null
-          vehicle_model?: string | null
+          address?: string | null
+          referred_by_customer_id?: string | null
+          is_vip?: boolean
           created_at?: string
+          updated_at?: string
+        }
+      }
+      vehicles: {
+        Row: {
+          id: string
+          customer_id: string | null
+          plate: string
+          brand: string
+          model: string
+          year: number | null
+          vin: string | null
+          color: string | null
+          engine_number: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          customer_id?: string | null
+          plate: string
+          brand: string
+          model: string
+          year?: number | null
+          vin?: string | null
+          color?: string | null
+          engine_number?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          customer_id?: string | null
+          plate?: string
+          brand?: string
+          model?: string
+          year?: number | null
+          vin?: string | null
+          color?: string | null
+          engine_number?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
         }
       }
       services: {
         Row: {
           id: string
-          name: string
-          description: string | null
-          base_price: number
-          duration_minutes: number | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          description?: string | null
-          base_price?: number
-          duration_minutes?: number | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          description?: string | null
-          base_price?: number
-          duration_minutes?: number | null
-          created_at?: string
-        }
-      }
-      membership_plans: {
-        Row: {
-          id: string
+          workshop_id: string | null
           name: string
           description: string | null
           price: number
-          duration_days: number
-          discount_percent: number
-          benefits: Json | null
-          active: boolean
+          estimated_duration_min: number
+          is_active: boolean
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
+          workshop_id?: string | null
           name: string
           description?: string | null
           price?: number
-          duration_days?: number
-          discount_percent?: number
-          benefits?: Json | null
-          active?: boolean
+          estimated_duration_min?: number
+          is_active?: boolean
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
+          workshop_id?: string | null
           name?: string
           description?: string | null
           price?: number
-          duration_days?: number
-          discount_percent?: number
-          benefits?: Json | null
-          active?: boolean
+          estimated_duration_min?: number
+          is_active?: boolean
           created_at?: string
-          updated_at?: string
-        }
-      }
-      client_memberships: {
-        Row: {
-          id: string
-          client_id: string
-          plan_id: string
-          start_date: string
-          end_date: string
-          status: 'active' | 'expired' | 'cancelled'
-          auto_renew: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          client_id: string
-          plan_id: string
-          start_date?: string
-          end_date?: string
-          status?: 'active' | 'expired' | 'cancelled'
-          auto_renew?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          client_id?: string
-          plan_id?: string
-          start_date?: string
-          end_date?: string
-          status?: 'active' | 'expired' | 'cancelled'
-          auto_renew?: boolean
-          created_at?: string
-          updated_at?: string
         }
       }
       work_orders: {
         Row: {
           id: string
-          client_id: string
-          appointment_id: string | null
+          workshop_id: string | null
+          vehicle_id: string | null
+          customer_id: string | null
+          advisor_id: string | null
           mechanic_id: string | null
-          assigned_mechanic_id: string | null
-          service_id: string | null
-          status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
-          notes: string | null
-          total: number
-          created_at: string
-          updated_at: string
-          order_number: number
-        }
-        Insert: {
-          id?: string
-          client_id: string
-          appointment_id?: string | null
-          mechanic_id?: string | null
-          assigned_mechanic_id?: string | null
-          service_id?: string | null
-          status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
-          notes?: string | null
-          total?: number
-          created_at?: string
-          updated_at?: string
-          order_number?: number
-        }
-        Update: {
-          id?: string
-          client_id?: string
-          appointment_id?: string | null
-          mechanic_id?: string | null
-          assigned_mechanic_id?: string | null
-          service_id?: string | null
-          status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
-          notes?: string | null
-          total?: number
-          created_at?: string
-          updated_at?: string
-          order_number?: number
-        }
-      }
-      mechanics: {
-        Row: {
-          id: string
-          full_name: string
-          phone: string | null
-          email: string | null
-          status: 'active' | 'inactive'
+          mileage: number | null
+          fault_description: string | null
+          diagnostic: string | null
+          status: string
+          total_labor: number
+          total_parts: number
+          total_amount: number
+          billing_status: string
+          initial_inspection: Json | null
+          final_inspection: Json | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          full_name: string
-          phone?: string | null
-          email?: string | null
-          status?: 'active' | 'inactive'
+          workshop_id?: string | null
+          vehicle_id?: string | null
+          customer_id?: string | null
+          advisor_id?: string | null
+          mechanic_id?: string | null
+          mileage?: number | null
+          fault_description?: string | null
+          diagnostic?: string | null
+          status?: string
+          total_labor?: number
+          total_parts?: number
+          total_amount?: number
+          billing_status?: string
+          initial_inspection?: Json | null
+          final_inspection?: Json | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          full_name?: string
-          phone?: string | null
-          email?: string | null
-          status?: 'active' | 'inactive'
+          workshop_id?: string | null
+          vehicle_id?: string | null
+          customer_id?: string | null
+          advisor_id?: string | null
+          mechanic_id?: string | null
+          mileage?: number | null
+          fault_description?: string | null
+          diagnostic?: string | null
+          status?: string
+          total_labor?: number
+          total_parts?: number
+          total_amount?: number
+          billing_status?: string
+          initial_inspection?: Json | null
+          final_inspection?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -292,172 +266,140 @@ export interface Database {
       work_order_services: {
         Row: {
           id: string
-          work_order_id: string
-          service_id: string
+          work_order_id: string | null
+          service_id: string | null
+          price: number
           quantity: number
-          unit_price: number
           notes: string | null
-          created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
-          work_order_id: string
-          service_id: string
+          work_order_id?: string | null
+          service_id?: string | null
+          price: number
           quantity?: number
-          unit_price?: number
           notes?: string | null
-          created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
-          work_order_id?: string
-          service_id?: string
+          work_order_id?: string | null
+          service_id?: string | null
+          price?: number
           quantity?: number
-          unit_price?: number
           notes?: string | null
-          created_at?: string
-          updated_at?: string
         }
       }
-      initial_inspections: {
+      work_order_parts: {
         Row: {
           id: string
-          work_order_id: string
-          inspector_name: string
-          mechanic_id: string | null
-          fecha_inspeccion: string
-          kilometraje_actual: number | null
-          combustible: 'lleno' | 'medio' | 'bajo' | null
-          nivel_aceite: 'correcto' | 'bajo' | 'sucio' | null
-          nivel_refrigerante: 'correcto' | 'bajo' | 'no_aplica' | null
-          bateria: 'buena' | 'debil' | 'sin_carga' | null
-          presion_neumaticos: 'correcta' | 'baja' | 'alta' | null
-          luces_alta: boolean
-          luces_baja: boolean
-          direccionales: boolean
-          stop: boolean
-          frenos: 'firmes' | 'esponjosos' | 'requieren_ajuste' | null
-          suspension_delantera: 'sin_fugas' | 'con_fugas' | 'ruidosa' | null
-          cadena_y_pinon: 'buena' | 'floja' | 'desgastada' | null
-          embrague: 'normal' | 'duro' | 'patina' | null
-          observaciones_generales: string | null
-          foto_recepcion_url: string | null
+          work_order_id: string | null
+          product_id: string | null
+          price: number
+          quantity: number
+        }
+        Insert: {
+          id?: string
+          work_order_id?: string | null
+          product_id?: string | null
+          price: number
+          quantity?: number
+        }
+        Update: {
+          id?: string
+          work_order_id?: string | null
+          product_id?: string | null
+          price?: number
+          quantity?: number
+        }
+      }
+      products: {
+        Row: {
+          id: string
+          sku: string
+          name: string
+          description: string | null
+          brand: string | null
+          unit_price: number
+          unit_cost: number
+          status: string
+          stock: number
           created_at: string
         }
         Insert: {
           id?: string
-          work_order_id: string
-          inspector_name: string
-          mechanic_id?: string | null
-          fecha_inspeccion?: string
-          kilometraje_actual?: number | null
-          combustible?: 'lleno' | 'medio' | 'bajo' | null
-          nivel_aceite?: 'correcto' | 'bajo' | 'sucio' | null
-          nivel_refrigerante?: 'correcto' | 'bajo' | 'no_aplica' | null
-          bateria?: 'buena' | 'debil' | 'sin_carga' | null
-          presion_neumaticos?: 'correcta' | 'baja' | 'alta' | null
-          luces_alta?: boolean
-          luces_baja?: boolean
-          direccionales?: boolean
-          stop?: boolean
-          frenos?: 'firmes' | 'esponjosos' | 'requieren_ajuste' | null
-          suspension_delantera?: 'sin_fugas' | 'con_fugas' | 'ruidosa' | null
-          cadena_y_pinon?: 'buena' | 'floja' | 'desgastada' | null
-          embrague?: 'normal' | 'duro' | 'patina' | null
-          observaciones_generales?: string | null
-          foto_recepcion_url?: string | null
+          sku: string
+          name: string
+          description?: string | null
+          brand?: string | null
+          unit_price: number
+          unit_cost: number
+          status?: string
+          stock?: number
           created_at?: string
         }
         Update: {
           id?: string
-          work_order_id?: string
-          inspector_name?: string
-          mechanic_id?: string | null
-          fecha_inspeccion?: string
-          kilometraje_actual?: number | null
-          combustible?: 'lleno' | 'medio' | 'bajo' | null
-          nivel_aceite?: 'correcto' | 'bajo' | 'sucio' | null
-          nivel_refrigerante?: 'correcto' | 'bajo' | 'no_aplica' | null
-          bateria?: 'buena' | 'debil' | 'sin_carga' | null
-          presion_neumaticos?: 'correcta' | 'baja' | 'alta' | null
-          luces_alta?: boolean
-          luces_baja?: boolean
-          direccionales?: boolean
-          stop?: boolean
-          frenos?: 'firmes' | 'esponjosos' | 'requieren_ajuste' | null
-          suspension_delantera?: 'sin_fugas' | 'con_fugas' | 'ruidosa' | null
-          cadena_y_pinon?: 'buena' | 'floja' | 'desgastada' | null
-          embrague?: 'normal' | 'duro' | 'patina' | null
-          observaciones_generales?: string | null
-          foto_recepcion_url?: string | null
+          sku?: string
+          name?: string
+          description?: string | null
+          brand?: string | null
+          unit_price?: number
+          unit_cost?: number
+          status?: string
+          stock?: number
           created_at?: string
         }
       }
-      final_inspections: {
+      membership_plans: {
         Row: {
           id: string
-          work_order_id: string
-          inspector_name: string
-          mechanic_id: string | null
-          fecha_revision: string
-          servicios_realizados: string | null
-          prueba_arranque: boolean
-          ruidos_inusuales: boolean
-          luces_funcionando: boolean
-          frenos_operativos: boolean
-          direccion_sin_juego: boolean
-          nivel_aceite_correcto: boolean
-          sin_fugas_visibles: boolean
-          neumaticos_correctos: boolean
-          comentarios_finales: string | null
-          foto_entrega_url: string | null
-          estado_general: 'apto' | 'observado'
-          firma_mecanico: string | null
-          created_at: string
+          workshop_id: string | null
+          name: string
+          price: number
+          duration_days: number
+          benefits: Json | null
         }
         Insert: {
           id?: string
-          work_order_id: string
-          inspector_name: string
-          mechanic_id?: string | null
-          fecha_revision?: string
-          servicios_realizados?: string | null
-          prueba_arranque?: boolean
-          ruidos_inusuales?: boolean
-          luces_funcionando?: boolean
-          frenos_operativos?: boolean
-          direccion_sin_juego?: boolean
-          nivel_aceite_correcto?: boolean
-          sin_fugas_visibles?: boolean
-          neumaticos_correctos?: boolean
-          comentarios_finales?: string | null
-          foto_entrega_url?: string | null
-          estado_general?: 'apto' | 'observado'
-          firma_mecanico?: string | null
-          created_at?: string
+          workshop_id?: string | null
+          name: string
+          price: number
+          duration_days: number
+          benefits?: Json | null
         }
         Update: {
           id?: string
-          work_order_id?: string
-          inspector_name?: string
-          mechanic_id?: string | null
-          fecha_revision?: string
-          servicios_realizados?: string | null
-          prueba_arranque?: boolean
-          ruidos_inusuales?: boolean
-          luces_funcionando?: boolean
-          frenos_operativos?: boolean
-          direccion_sin_juego?: boolean
-          nivel_aceite_correcto?: boolean
-          sin_fugas_visibles?: boolean
-          neumaticos_correctos?: boolean
-          comentarios_finales?: string | null
-          foto_entrega_url?: string | null
-          estado_general?: 'apto' | 'observado'
-          firma_mecanico?: string | null
-          created_at?: string
+          workshop_id?: string | null
+          name?: string
+          price?: number
+          duration_days?: number
+          benefits?: Json | null
+        }
+      }
+      memberships: {
+        Row: {
+          id: string
+          customer_id: string | null
+          plan_id: string | null
+          start_date: string
+          end_date: string
+          is_active: boolean
+        }
+        Insert: {
+          id?: string
+          customer_id?: string | null
+          plan_id?: string | null
+          start_date?: string
+          end_date: string
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          customer_id?: string | null
+          plan_id?: string | null
+          start_date?: string
+          end_date?: string
+          is_active?: boolean
         }
       }
       loyalty_referrals: {
@@ -467,7 +409,7 @@ export interface Database {
           referrer_name: string
           referred_name: string
           referred_phone: string
-          status: 'pending' | 'completed'
+          status: 'lead' | 'completed'
           created_at: string
           updated_at: string
         }
@@ -477,7 +419,7 @@ export interface Database {
           referrer_name: string
           referred_name: string
           referred_phone: string
-          status?: 'pending' | 'completed'
+          status?: 'lead' | 'completed'
           created_at?: string
           updated_at?: string
         }
@@ -487,7 +429,89 @@ export interface Database {
           referrer_name?: string
           referred_name?: string
           referred_phone?: string
-          status?: 'pending' | 'completed'
+          status?: 'lead' | 'completed'
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      budgets: {
+        Row: {
+          id: string
+          budget_number: number
+          workshop_id: string | null
+          customer_id: string | null
+          vehicle_id: string | null
+          status: 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED' | 'EXPIRED'
+          valid_until: string | null
+          notes: string | null
+          total_amount: number
+          manual_customer_name: string | null
+          manual_vehicle_name: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          budget_number?: number
+          workshop_id?: string | null
+          customer_id?: string | null
+          vehicle_id?: string | null
+          status?: 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED' | 'EXPIRED'
+          valid_until?: string | null
+          notes?: string | null
+          total_amount?: number
+          manual_customer_name?: string | null
+          manual_vehicle_name?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          budget_number?: number
+          workshop_id?: string | null
+          customer_id?: string | null
+          vehicle_id?: string | null
+          status?: 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED' | 'EXPIRED'
+          valid_until?: string | null
+          notes?: string | null
+          total_amount?: number
+          manual_customer_name?: string | null
+          manual_vehicle_name?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      budget_items: {
+        Row: {
+          id: string
+          budget_id: string
+          service_id: string | null
+          product_id: string | null
+          description: string
+          quantity: number
+          unit_price: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          budget_id: string
+          service_id?: string | null
+          product_id?: string | null
+          description: string
+          quantity?: number
+          unit_price?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          budget_id?: string
+          service_id?: string | null
+          product_id?: string | null
+          description?: string
+          quantity?: number
+          unit_price?: number
           created_at?: string
           updated_at?: string
         }
@@ -500,7 +524,7 @@ export interface Database {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      budget_status: 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED' | 'EXPIRED'
     }
   }
 }

@@ -104,6 +104,10 @@
     @apply transition-all duration-200;
   }
 
+  .glass-panel {
+    @apply bg-zinc-900/40 backdrop-blur-xl border border-white/5;
+  }
+
   .heading-racing {
     font-family: 'Teko', sans-serif;
     font-weight: 700;

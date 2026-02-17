@@ -1,0 +1,22 @@
+version: "3.7"
+
+services:
+  motocadena-frontend:
+    image: nginx:alpine
+    volumes:
+      - /var/www/motocadena/dist:/usr/share/nginx/html:ro
+      - ./motocadena_nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - geraldnet
+    deploy:
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.motocadena-frontend.rule=Host(`motocadena.com`) || Host(`www.motocadena.com`)"
+        - "traefik.http.routers.motocadena-frontend.entrypoints=web,websecure"
+        - "traefik.http.routers.motocadena-frontend.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.motocadena-frontend.loadbalancer.server.port=80"
+
+networks:
+  geraldnet:
+    external: true
