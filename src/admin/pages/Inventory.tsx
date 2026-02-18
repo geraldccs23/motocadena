@@ -14,6 +14,8 @@ const Inventory: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [importStatus, setImportStatus] = useState<{ success?: number, total?: number, duplicates?: number, error?: string } | null>(null);
   const [categories, setCategories] = useState<{ id: string, name: string }[]>([]);
+  const [workshopId, setWorkshopId] = useState<string | null>(null);
+  const [warehouseId, setWarehouseId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -41,9 +43,34 @@ const Inventory: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchInventory();
-    fetchCategories();
+    fetchInitialData();
   }, []);
+
+  const fetchInitialData = async () => {
+    setLoading(true);
+    try {
+      // Cargar inventario y categorías en paralelo
+      await Promise.all([
+        fetchInventory(),
+        fetchCategories(),
+        fetchMetadata()
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMetadata = async () => {
+    try {
+      const { data: ws } = await supabase.from('workshops').select('id').limit(1).single();
+      const { data: wh } = await supabase.from('warehouses').select('id').limit(1).single();
+
+      if (ws) setWorkshopId(ws.id);
+      if (wh) setWarehouseId(wh.id);
+    } catch (err) {
+      console.error("Error fetching metadata:", err);
+    }
+  };
 
   const fetchInventory = async () => {
     setLoading(true);
@@ -77,23 +104,34 @@ const Inventory: React.FC = () => {
     }
 
     setUploadingImage(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.warn('Abortando subida por timeout (30s)');
+      controller.abort();
+    }, 30000);
+
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-
       const filePath = `products/${fileName}`;
 
-      console.log('Intentando subir a:', filePath);
+      console.log('--- INICIO SUBIDA ---', { filePath, size: file.size });
 
       const { error: uploadError } = await supabase.storage
         .from('motocadena')
-        .upload(filePath, file, { cacheControl: '3600', upsert: false });
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      clearTimeout(timeoutId);
 
       if (uploadError) {
         console.error('Error Supabase Upload:', uploadError);
         throw uploadError;
       }
 
+      console.log('Descargando URL pública...');
       const { data: { publicUrl } } = supabase.storage
         .from('motocadena')
         .getPublicUrl(filePath);
@@ -101,29 +139,43 @@ const Inventory: React.FC = () => {
       console.log('Subida exitosa. URL:', publicUrl);
       setProductForm(prev => ({ ...prev, image_url: publicUrl }));
     } catch (err: any) {
-      console.error('Error capturado:', err);
-      if (err.message === 'Bucket not found') {
+      console.error('Error capturado en handleImageUpload:', err);
+      if (err.name === 'AbortError') {
+        alert('TIEMPO EXCEDIDO: La subida tardó demasiado (30s). Revisa tu conexión.');
+      } else if (err.message === 'Bucket not found') {
         alert('ERROR: El bucket "motocadena" no existe. Ejecuta la migración 0047.');
+      } else if (err.name === 'TypeError' || err.message === 'Failed to fetch') {
+        alert('ERROR DE CONEXIÓN: Se perdió la conexión con Supabase. Revisa tu internet.');
       } else {
-        alert(`Error al subir imagen: ${err.message || 'Error desconocido'}`);
+        alert(`Error al subir imagen: ${err.message || 'Error de red'}`);
       }
     } finally {
+      clearTimeout(timeoutId);
+      console.log('--- FIN SUBIDA (Estado reseteado) ---');
       setUploadingImage(false);
-      if (e.target) e.target.value = '';
+      if (e.target) {
+        e.target.value = '';
+        console.log('Input de archivo reseteado.');
+      }
     }
   };
 
-  const fetchCategories = async () => {
+  const fetchCategories = async (retries = 3) => {
     try {
       const { data, error } = await supabase
         .from('product_categories')
         .select('id, name')
         .eq('is_active', true)
         .order('name');
+
       if (error) throw error;
       setCategories(data || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching categories:", err);
+      if (retries > 0) {
+        console.log(`Reintentando categorías... (${retries} intentos restantes)`);
+        setTimeout(() => fetchCategories(retries - 1), 2000);
+      }
     }
   };
 
@@ -228,9 +280,6 @@ const Inventory: React.FC = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const { data: ws } = await supabase.from('workshops').select('id').limit(1).single();
-      const { data: wh } = await supabase.from('warehouses').select('id').limit(1).single();
-
       const productData: any = {
         sku: productForm.sku.trim().toUpperCase(),
         name: productForm.name,
@@ -244,7 +293,7 @@ const Inventory: React.FC = () => {
         category_id: productForm.category_id || null,
         slug: productForm.slug || productForm.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''),
         image_url: productForm.image_url,
-        workshop_id: ws?.id
+        workshop_id: workshopId
       };
 
       console.log('Intentando guardar producto:', productData);
@@ -279,7 +328,7 @@ const Inventory: React.FC = () => {
       if (!productForm.id) {
         await supabase.from('inventory_levels').upsert([{
           product_id: prodId,
-          warehouse_id: wh?.id,
+          warehouse_id: warehouseId,
           stock: 0
         }], { onConflict: 'product_id,warehouse_id' });
       }
