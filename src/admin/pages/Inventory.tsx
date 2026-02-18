@@ -62,13 +62,14 @@ const Inventory: React.FC = () => {
 
   const fetchMetadata = async () => {
     try {
-      const { data: ws } = await supabase.from('workshops').select('id').limit(1).single() as any;
-      const { data: wh } = await supabase.from('warehouses').select('id').limit(1).single() as any;
+      // Evitar .single() si puede que no haya datos, usar .limit(1) y revisar el primer elemento
+      const { data: ws } = await supabase.from('workshops').select('id').limit(1);
+      const { data: wh } = await supabase.from('warehouses').select('id').limit(1);
 
-      if (ws?.id) setWorkshopId(ws.id);
-      if (wh?.id) setWarehouseId(wh.id);
+      if (ws && ws.length > 0) setWorkshopId(ws[0].id);
+      if (wh && wh.length > 0) setWarehouseId(wh[0].id);
     } catch (err) {
-      console.error("Error fetching metadata:", err);
+      console.error("Error fetching metadata details:", err);
     }
   };
 
@@ -103,13 +104,6 @@ const Inventory: React.FC = () => {
       return;
     }
 
-    setUploadingImage(true);
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      console.warn('Abortando subida por timeout (30s)');
-      controller.abort();
-    }, 30000);
-
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
@@ -141,7 +135,7 @@ const Inventory: React.FC = () => {
     } catch (err: any) {
       console.error('Error capturado en handleImageUpload:', err);
       if (err.name === 'AbortError') {
-        alert('TIEMPO EXCEDIDO: La subida tardó demasiado (30s). Revisa tu conexión.');
+        alert('TIEMPO EXCEDIDO: La subida tardó demasiado. Revisa tu conexión.');
       } else if (err.message === 'Bucket not found') {
         alert('ERROR: El bucket "motocadena" no existe. Ejecuta la migración 0047.');
       } else if (err.name === 'TypeError' || err.message === 'Failed to fetch') {
@@ -150,7 +144,6 @@ const Inventory: React.FC = () => {
         alert(`Error al subir imagen: ${err.message || 'Error de red'}`);
       }
     } finally {
-      clearTimeout(timeoutId);
       console.log('--- FIN SUBIDA (Estado reseteado) ---');
       setUploadingImage(false);
       if (e.target) {

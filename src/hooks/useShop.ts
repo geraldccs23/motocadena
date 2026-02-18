@@ -37,7 +37,12 @@ export function useShop() {
             setProducts(prodData || []);
 
         } catch (err: any) {
-            console.error('Error loading shop data details:', err);
+            console.error('CRITICAL: Shop data load failed.', {
+                name: err.name,
+                message: err.message,
+                reason: err.reason, // Algunos browsers lo ponen aquí
+                stack: err.stack
+            });
             setError(err.message || 'Error al cargar la tienda');
         } finally {
             setLoading(false);
