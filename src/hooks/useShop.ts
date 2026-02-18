@@ -30,13 +30,14 @@ export function useShop() {
                     image_url
                 `)
                 .eq('is_ecommerce', true)
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .limit(8);
 
             if (prodErr) throw prodErr;
             setProducts(prodData || []);
 
         } catch (err: any) {
-            console.error('Error loading shop data:', err);
+            console.error('Error loading shop data details:', err);
             setError(err.message || 'Error al cargar la tienda');
         } finally {
             setLoading(false);

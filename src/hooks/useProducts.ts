@@ -36,7 +36,7 @@ export function useProducts() {
                 setPagination(json.pagination);
             }
         } catch (err: any) {
-            console.warn('Backend stock fetch failed, trying Supabase products:', err.message);
+            console.warn('Backend stock fetch failed, trying Supabase products:', err);
             // Fallback for direct Supabase access (without pagination for now)
             try {
                 const { data, error: sErr } = await supabase
@@ -46,6 +46,7 @@ export function useProducts() {
                 if (sErr) throw sErr;
                 setProducts((data || []) as Product[]);
             } catch (sErr: any) {
+                console.error('Supabase fallback fetch failed:', sErr);
                 setError(sErr.message || 'Failed to load products');
             }
         } finally {

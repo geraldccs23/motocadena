@@ -28,6 +28,7 @@ export function useServices() {
                 const json = await resp.json();
                 setServices(json?.services || []);
             } catch (be: any) {
+                console.error('Error in useServices backend fetch:', be);
                 setError(be.message || 'Failed to load services');
             }
         } finally {

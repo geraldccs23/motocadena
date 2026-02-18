@@ -62,11 +62,11 @@ const Inventory: React.FC = () => {
 
   const fetchMetadata = async () => {
     try {
-      const { data: ws } = await supabase.from('workshops').select('id').limit(1).single();
-      const { data: wh } = await supabase.from('warehouses').select('id').limit(1).single();
+      const { data: ws } = await supabase.from('workshops').select('id').limit(1).single() as any;
+      const { data: wh } = await supabase.from('warehouses').select('id').limit(1).single() as any;
 
-      if (ws) setWorkshopId(ws.id);
-      if (wh) setWarehouseId(wh.id);
+      if (ws?.id) setWorkshopId(ws.id);
+      if (wh?.id) setWarehouseId(wh.id);
     } catch (err) {
       console.error("Error fetching metadata:", err);
     }
@@ -238,10 +238,10 @@ const Inventory: React.FC = () => {
           min_stock: row.min_stock
         }));
 
-        const { data: insertedProducts, error: pError } = await supabase
-          .from('products')
-          .upsert(productBatch, { onConflict: 'sku' })
-          .select();
+        const { data: insertedProducts, error: pError } = await (supabase
+          .from('products' as any)
+          .upsert(productBatch as any, { onConflict: 'sku' })
+          .select()) as { data: any, error: any };
 
         if (pError) throw pError;
 
@@ -254,9 +254,9 @@ const Inventory: React.FC = () => {
           };
         });
 
-        const { error: iError } = await supabase
-          .from('inventory_levels')
-          .upsert(inventoryBatch, { onConflict: 'product_id,warehouse_id' });
+        const { error: iError } = await (supabase
+          .from('inventory_levels' as any)
+          .upsert(inventoryBatch as any, { onConflict: 'product_id,warehouse_id' })) as any;
 
         if (iError) throw iError;
 
@@ -298,19 +298,19 @@ const Inventory: React.FC = () => {
 
       console.log('Intentando guardar producto:', productData);
 
-      let result;
+      let result: any;
       if (productForm.id) {
         console.log('Realizando UPDATE para ID:', productForm.id);
-        result = await supabase
-          .from('products')
+        result = await (supabase
+          .from('products') as any)
           .update(productData)
           .eq('id', productForm.id)
           .select()
           .single();
       } else {
         console.log('Realizando UPSERT por SKU:', productData.sku);
-        result = await supabase
-          .from('products')
+        result = await (supabase
+          .from('products') as any)
           .upsert([productData], { onConflict: 'sku' })
           .select()
           .single();
@@ -326,7 +326,7 @@ const Inventory: React.FC = () => {
       const prodId = productForm.id || result.data.id;
 
       if (!productForm.id) {
-        await supabase.from('inventory_levels').upsert([{
+        await (supabase.from('inventory_levels') as any).upsert([{
           product_id: prodId,
           warehouse_id: warehouseId,
           stock: 0
@@ -366,19 +366,21 @@ const Inventory: React.FC = () => {
 
       if (newStock < 0) throw new Error("Stock insuficiente.");
 
-      await supabase.from('inventory_movements').insert([{
+      const { error: mError } = await (supabase.from('inventory_movements' as any).insert([{
         product_id: selectedProduct.id,
         warehouse_id: wh?.id,
         type: movementForm.type,
         quantity: movementForm.quantity,
         notes: movementForm.notes
-      }]);
+      }]) as any);
+      if (mError) throw mError;
 
-      await supabase.from('inventory_levels').upsert({
+      const { error: lError } = await (supabase.from('inventory_levels' as any).upsert({
         product_id: selectedProduct.id,
         warehouse_id: wh?.id,
         stock: newStock
-      }, { onConflict: 'product_id,warehouse_id' });
+      }, { onConflict: 'product_id,warehouse_id' }) as any);
+      if (lError) throw lError;
 
       setShowMovementModal(false);
       setSelectedProduct(null);
