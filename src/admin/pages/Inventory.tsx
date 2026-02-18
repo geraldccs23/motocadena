@@ -81,8 +81,7 @@ const Inventory: React.FC = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
 
-      const folderPath = productForm.id ? `products/${productForm.id}` : 'products/new';
-      const filePath = `${folderPath}/${fileName}`;
+      const filePath = `products/${fileName}`;
 
       console.log('Intentando subir a:', filePath);
 
@@ -651,8 +650,14 @@ const Inventory: React.FC = () => {
                 )}
               </div>
 
-              <button type="submit" disabled={submitting} className="w-full py-6 bg-amber-500 text-black rounded-2xl font-bold heading-racing text-3xl hover:bg-amber-400 transition-all shadow-[0_15px_40px_rgba(245,158,11,0.25)] flex items-center justify-center gap-4">
-                {submitting ? <Loader2 size={32} className="animate-spin" /> : <>GUARDAR EN CATÁLOGO <ChevronRight size={32} /></>}
+              <button
+                type="submit"
+                disabled={submitting || uploadingImage}
+                className="w-full py-6 bg-amber-500 text-black rounded-2xl font-bold heading-racing text-3xl hover:bg-amber-400 transition-all shadow-[0_15px_40px_rgba(245,158,11,0.25)] flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? <Loader2 size={32} className="animate-spin" /> : (
+                  uploadingImage ? <><Loader2 size={32} className="animate-spin" /> ESPERA...</> : <>GUARDAR EN CATÁLOGO <ChevronRight size={32} /></>
+                )}
               </button>
             </form>
           </div>
