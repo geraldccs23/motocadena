@@ -3,17 +3,19 @@ import { Database } from '../lib/database.types';
 export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row'];
 export type Enums<T extends keyof Database['public']['Enums']> = Database['public']['Enums'][T];
 
-export type Appointment = Tables<'appointments'>;
-export type UserProfile = Tables<'users'>;
-export type Client = Tables<'clients'>;
+// Citas - Temporally disabled until table is recovered in types
+// export type Appointment = Tables<'appointments'>;
+export type Appointment = any;
+export type UserProfile = Tables<'user_profiles'>;
+export type Client = Tables<'customers'>;
 export type Service = Tables<'services'>;
 export type WorkOrder = Tables<'work_orders'>;
 export type WorkOrderService = Tables<'work_order_services'>;
-export type Mechanic = Tables<'mechanics'>;
-export type InitialInspection = Tables<'initial_inspections'>;
-export type FinalInspection = Tables<'final_inspections'>;
+export type Mechanic = Tables<'user_profiles'>;
+export type InitialInspection = any;
+export type FinalInspection = any;
 export type MembershipPlan = Tables<'membership_plans'>;
-export type ClientMembership = Tables<'client_memberships'>;
+export type ClientMembership = any;
 
 export interface Supplier {
     id?: string;
@@ -96,6 +98,15 @@ export interface ProductCategory {
     is_active: boolean;
 }
 
+export interface ProductImage {
+    id: string;
+    product_id: string;
+    url: string;
+    alt_text?: string | null;
+    is_primary: boolean;
+    display_order: number;
+}
+
 export interface Product {
     id?: string;
     sku: string;
@@ -105,14 +116,16 @@ export interface Product {
     brand?: string | null;
     supplier_code?: string | null;
     oem_code?: string | null;
-    unit_price: number;
-    unit_cost: number;
+    price: number;
+    cost: number;
     status?: 'active' | 'inactive';
     is_ecommerce?: boolean;
     is_featured?: boolean;
     category_id?: string | null;
     stock?: number;
     created_at?: string;
+    image_url?: string | null;
+    product_images?: ProductImage[];
 }
 
 export type OrderStatus = WorkOrder['status'];

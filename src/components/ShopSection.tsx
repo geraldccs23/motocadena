@@ -91,9 +91,9 @@ const ShopSection: React.FC = () => {
                         {filteredProducts.map((product) => (
                             <Card key={product.id} className="group hover:border-amber-500/50 transition-all flex flex-col h-full bg-zinc-900/40 backdrop-blur-sm border-zinc-800 overflow-hidden rounded-[2.5rem]">
                                 <div className="aspect-square relative overflow-hidden bg-zinc-950">
-                                    {(product as any).product_images && (product as any).product_images.length > 0 ? (
+                                    {product.image_url ? (
                                         <img
-                                            src={(product as any).product_images[0].url}
+                                            src={product.image_url}
                                             alt={product.name}
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                         />
@@ -136,7 +136,7 @@ const ShopSection: React.FC = () => {
                                         <div>
                                             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">PRECIO BASE</p>
                                             <p className="text-3xl font-black text-white heading-racing italic text-glow-amber transition-all group-hover:scale-110 origin-left">
-                                                ${Number(product.unit_price).toFixed(2)}
+                                                ${Number(product.price).toFixed(2)}
                                             </p>
                                         </div>
                                         <Button

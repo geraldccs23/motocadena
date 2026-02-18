@@ -27,7 +27,7 @@ export function useShop() {
                 .from('products')
                 .select(`
                     *,
-                    product_images (*)
+                    image_url
                 `)
                 .eq('is_ecommerce', true)
                 .order('created_at', { ascending: false });

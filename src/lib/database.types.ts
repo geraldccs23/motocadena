@@ -315,38 +315,62 @@ export interface Database {
       products: {
         Row: {
           id: string
+          workshop_id: string | null
           sku: string
           name: string
           description: string | null
           brand: string | null
-          unit_price: number
-          unit_cost: number
+          category: string | null
+          cost: number
+          price: number
+          min_stock: number
           status: string
           stock: number
+          slug: string | null
+          is_ecommerce: boolean | null
+          is_featured: boolean | null
+          category_id: string | null
+          image_url: string | null
           created_at: string
         }
         Insert: {
           id?: string
+          workshop_id?: string | null
           sku: string
           name: string
           description?: string | null
           brand?: string | null
-          unit_price: number
-          unit_cost: number
+          category?: string | null
+          cost: number
+          price: number
+          min_stock?: number
           status?: string
           stock?: number
+          slug?: string | null
+          is_ecommerce?: boolean | null
+          is_featured?: boolean | null
+          category_id?: string | null
+          image_url?: string | null
           created_at?: string
         }
         Update: {
           id?: string
+          workshop_id?: string | null
           sku?: string
           name?: string
           description?: string | null
           brand?: string | null
-          unit_price?: number
-          unit_cost?: number
+          category?: string | null
+          cost?: number
+          price?: number
+          min_stock?: number
           status?: string
           stock?: number
+          slug?: string | null
+          is_ecommerce?: boolean | null
+          is_featured?: boolean | null
+          category_id?: string | null
+          image_url?: string | null
           created_at?: string
         }
       }
@@ -514,6 +538,139 @@ export interface Database {
           unit_price?: number
           created_at?: string
           updated_at?: string
+        }
+      }
+      product_categories: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          description: string | null
+          image_url: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          description?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          description?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      product_images: {
+        Row: {
+          id: string
+          product_id: string
+          url: string
+          alt_text: string | null
+          is_primary: boolean
+          display_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          url: string
+          alt_text?: string | null
+          is_primary?: boolean
+          display_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          url?: string
+          alt_text?: string | null
+          is_primary?: boolean
+          display_order?: number
+          created_at?: string
+        }
+      }
+      warehouses: {
+        Row: {
+          id: string
+          name: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          created_at?: string
+        }
+      }
+      inventory_levels: {
+        Row: {
+          id: string
+          product_id: string
+          warehouse_id: string
+          stock: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          warehouse_id: string
+          stock?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          warehouse_id?: string
+          stock?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      inventory_movements: {
+        Row: {
+          id: string
+          product_id: string
+          warehouse_id: string
+          type: string
+          quantity: number
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          warehouse_id: string
+          type: string
+          quantity: number
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          warehouse_id?: string
+          type?: string
+          quantity?: number
+          notes?: string | null
+          created_at?: string
         }
       }
     }

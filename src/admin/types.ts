@@ -101,7 +101,22 @@ export interface Product {
   cost: number;
   price: number;
   min_stock: number;
+  slug?: string;
+  is_ecommerce?: boolean;
+  is_featured?: boolean;
+  category_id?: string;
+  image_url?: string;
   inventory_levels?: InventoryLevel[];
+  product_images?: ProductImage[];
+}
+
+export interface ProductImage {
+  id: string;
+  product_id: string;
+  url: string;
+  alt_text?: string;
+  is_primary: boolean;
+  display_order: number;
 }
 
 export interface Service {

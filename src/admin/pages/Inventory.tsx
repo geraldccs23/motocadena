@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Package, Plus, Search, AlertTriangle, ArrowUpDown, MoreVertical, Loader2, X, ChevronRight, Hash, DollarSign, Tag, Archive, ArrowUpRight, ArrowDownRight, FileSpreadsheet, Upload, Download, CheckCircle2, Trash2, Edit } from 'lucide-react';
+import { Package, Plus, Search, AlertTriangle, ArrowUpDown, Loader2, X, ChevronRight, Archive, ArrowUpRight, ArrowDownRight, FileSpreadsheet, Upload, CheckCircle2, Trash2, Edit } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Product, MovementType } from '../types';
 
@@ -13,17 +13,25 @@ const Inventory: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [importStatus, setImportStatus] = useState<{ success?: number, total?: number, duplicates?: number, error?: string } | null>(null);
+  const [categories, setCategories] = useState<{ id: string, name: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [productForm, setProductForm] = useState({
-    id: '', // Para edición
+    id: '',
     sku: '',
     name: '',
     brand: '',
     category: '',
     cost: 0,
     price: 0,
-    min_stock: 5
+    min_stock: 5,
+    is_ecommerce: false,
+    is_featured: false,
+    category_id: '',
+    slug: '',
+    image_url: ''
   });
 
   const [movementForm, setMovementForm] = useState({
@@ -34,6 +42,7 @@ const Inventory: React.FC = () => {
 
   useEffect(() => {
     fetchInventory();
+    fetchCategories();
   }, []);
 
   const fetchInventory = async () => {
@@ -50,6 +59,72 @@ const Inventory: React.FC = () => {
       console.error("Error fetching inventory:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validaciones básicas
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona un archivo de imagen válido.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('La imagen es demasiado pesada (máximo 5MB).');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+
+      const folderPath = productForm.id ? `products/${productForm.id}` : 'products/new';
+      const filePath = `${folderPath}/${fileName}`;
+
+      console.log('Intentando subir a:', filePath);
+
+      const { error: uploadError } = await supabase.storage
+        .from('motocadena')
+        .upload(filePath, file, { cacheControl: '3600', upsert: false });
+
+      if (uploadError) {
+        console.error('Error Supabase Upload:', uploadError);
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('motocadena')
+        .getPublicUrl(filePath);
+
+      console.log('Subida exitosa. URL:', publicUrl);
+      setProductForm(prev => ({ ...prev, image_url: publicUrl }));
+    } catch (err: any) {
+      console.error('Error capturado:', err);
+      if (err.message === 'Bucket not found') {
+        alert('ERROR: El bucket "motocadena" no existe. Ejecuta la migración 0047.');
+      } else {
+        alert(`Error al subir imagen: ${err.message || 'Error desconocido'}`);
+      }
+    } finally {
+      setUploadingImage(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('product_categories')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
     }
   };
 
@@ -80,23 +155,18 @@ const Inventory: React.FC = () => {
         const { data: wh } = await supabase.from('warehouses').select('id').limit(1).single();
         if (!ws || !wh) throw new Error("Configuración base de MOTOCADENA no encontrada.");
 
-        // DEDUPLICACIÓN Y MAPEO INTELIGENTE
         const uniqueRowsMap = new Map();
         rawDataRows.forEach(row => {
           const sku = (row.sku || '').trim().toUpperCase();
           if (sku) {
-            // Mapeo flexible de nombres de columnas
             const mappedRow = {
               sku: sku,
               name: row.name || row.producto || 'Sin Nombre',
               brand: row.brand || row.marca || '',
               category: row.category || row.categoria || '',
-              // Busca unit_price o price
               price: parseFloat((row.unit_price || row.price || '0').replace(/[^0-9.]/g, '')),
-              // Busca cost o asume un margen si no existe
               cost: parseFloat((row.cost || '0').replace(/[^0-9.]/g, '')) || (parseFloat((row.unit_price || row.price || '0').replace(/[^0-9.]/g, '')) * 0.7),
               min_stock: parseInt(row.min_stock || '5'),
-              // Busca stock o initial_stock
               initial_stock: parseInt(row.stock || row.initial_stock || '0')
             };
             uniqueRowsMap.set(sku, mappedRow);
@@ -117,7 +187,6 @@ const Inventory: React.FC = () => {
           min_stock: row.min_stock
         }));
 
-        // 1. Upsert Masivo de Productos
         const { data: insertedProducts, error: pError } = await supabase
           .from('products')
           .upsert(productBatch, { onConflict: 'sku' })
@@ -125,7 +194,6 @@ const Inventory: React.FC = () => {
 
         if (pError) throw pError;
 
-        // 2. Upsert de Niveles de Inventario
         const inventoryBatch = insertedProducts.map(p => {
           const originalRow = deduplicatedRows.find(dr => dr.sku === p.sku);
           return {
@@ -164,7 +232,7 @@ const Inventory: React.FC = () => {
       const { data: ws } = await supabase.from('workshops').select('id').limit(1).single();
       const { data: wh } = await supabase.from('warehouses').select('id').limit(1).single();
 
-      const productData = {
+      const productData: any = {
         sku: productForm.sku.trim().toUpperCase(),
         name: productForm.name,
         brand: productForm.brand,
@@ -172,11 +240,19 @@ const Inventory: React.FC = () => {
         cost: productForm.cost,
         price: productForm.price,
         min_stock: productForm.min_stock,
+        is_ecommerce: productForm.is_ecommerce,
+        is_featured: productForm.is_featured,
+        category_id: productForm.category_id || null,
+        slug: productForm.slug || productForm.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''),
+        image_url: productForm.image_url,
         workshop_id: ws?.id
       };
 
+      console.log('Intentando guardar producto:', productData);
+
       let result;
       if (productForm.id) {
+        console.log('Realizando UPDATE para ID:', productForm.id);
         result = await supabase
           .from('products')
           .update(productData)
@@ -184,6 +260,7 @@ const Inventory: React.FC = () => {
           .select()
           .single();
       } else {
+        console.log('Realizando UPSERT por SKU:', productData.sku);
         result = await supabase
           .from('products')
           .upsert([productData], { onConflict: 'sku' })
@@ -191,11 +268,18 @@ const Inventory: React.FC = () => {
           .single();
       }
 
-      if (result.error) throw result.error;
+      if (result.error) {
+        console.error('Error de Supabase al guardar producto:', result.error);
+        throw result.error;
+      }
+
+      console.log('Producto guardado con éxito:', result.data);
+
+      const prodId = productForm.id || result.data.id;
 
       if (!productForm.id) {
         await supabase.from('inventory_levels').upsert([{
-          product_id: result.data.id,
+          product_id: prodId,
           warehouse_id: wh?.id,
           stock: 0
         }], { onConflict: 'product_id,warehouse_id' });
@@ -260,7 +344,10 @@ const Inventory: React.FC = () => {
   };
 
   const resetProductForm = () => {
-    setProductForm({ id: '', sku: '', name: '', brand: '', category: '', cost: 0, price: 0, min_stock: 5 });
+    setProductForm({
+      id: '', sku: '', name: '', brand: '', category: '', cost: 0, price: 0, min_stock: 5,
+      is_ecommerce: false, is_featured: false, category_id: '', slug: '', image_url: ''
+    });
   };
 
   const openEditModal = (p: Product) => {
@@ -272,12 +359,18 @@ const Inventory: React.FC = () => {
       category: p.category || '',
       cost: p.cost,
       price: p.price,
-      min_stock: p.min_stock
+      min_stock: p.min_stock,
+      is_ecommerce: p.is_ecommerce || false,
+      is_featured: p.is_featured || false,
+      category_id: p.category_id || '',
+      slug: p.slug || '',
+      image_url: p.image_url || ''
     });
     setShowProductModal(true);
   };
 
   const getProductStock = (p: Product) => p.inventory_levels?.[0]?.stock || 0;
+
   const filtered = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.sku.toLowerCase().includes(searchTerm.toLowerCase())
@@ -344,11 +437,20 @@ const Inventory: React.FC = () => {
                   <tr key={product.id} className="hover:bg-amber-500/[0.02] transition-all group">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-6">
-                        <div className={`w-14 h-14 rounded-2xl bg-zinc-950 border ${isLow ? 'border-red-500/30' : 'border-zinc-800'} flex items-center justify-center text-zinc-700 group-hover:text-amber-500`}>
-                          <Package size={28} />
+                        <div className={`w-14 h-14 rounded-2xl bg-zinc-950 border ${isLow ? 'border-red-500/30' : 'border-zinc-800'} flex items-center justify-center text-zinc-700 group-hover:text-amber-500 overflow-hidden`}>
+                          {product.image_url ? (
+                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <Package size={28} />
+                          )}
                         </div>
                         <div>
-                          <div className="text-zinc-100 font-bold text-lg leading-tight">{product.name}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-zinc-100 font-bold text-lg leading-tight">{product.name}</div>
+                            {product.is_ecommerce && (
+                              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" title="Visible en eCommerce"></div>
+                            )}
+                          </div>
                           <div className="flex gap-3 items-center mt-1.5">
                             <span className="text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-lg text-zinc-500 font-black tracking-widest uppercase">{product.sku}</span>
                             <span className="text-[10px] text-amber-500 font-black italic uppercase tracking-tighter">{product.brand}</span>
@@ -454,6 +556,101 @@ const Inventory: React.FC = () => {
                   <input required type="number" value={productForm.min_stock} onChange={e => setProductForm({ ...productForm, min_stock: parseInt(e.target.value) })} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-5 py-4 text-zinc-100 outline-none" />
                 </div>
               </div>
+
+              {/* eCommerce Section */}
+              <div className="p-6 bg-zinc-950 border border-zinc-800 rounded-[1.5rem] space-y-6">
+                <div className="flex items-center justify-between">
+                  <h4 className="heading-racing text-xl text-zinc-400 italic">Opciones de eCommerce</h4>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input type="checkbox" checked={productForm.is_ecommerce} onChange={e => setProductForm({ ...productForm, is_ecommerce: e.target.checked })} className="hidden" />
+                      <div className={`w-10 h-6 rounded-full p-1 transition-all ${productForm.is_ecommerce ? 'bg-amber-500' : 'bg-zinc-800'}`}>
+                        <div className={`w-4 h-4 bg-black rounded-full transition-all ${productForm.is_ecommerce ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </div>
+                      <span className="text-[10px] font-black uppercase text-zinc-500 group-hover:text-zinc-300">Tienda</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input type="checkbox" checked={productForm.is_featured} onChange={e => setProductForm({ ...productForm, is_featured: e.target.checked })} className="hidden" />
+                      <div className={`w-10 h-6 rounded-full p-1 transition-all ${productForm.is_featured ? 'bg-blue-500' : 'bg-zinc-800'}`}>
+                        <div className={`w-4 h-4 bg-black rounded-full transition-all ${productForm.is_featured ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </div>
+                      <span className="text-[10px] font-black uppercase text-zinc-500 group-hover:text-zinc-300">Destacado</span>
+                    </label>
+                  </div>
+                </div>
+
+                {productForm.is_ecommerce && (
+                  <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase font-black text-zinc-500 tracking-widest ml-1">Categoría Web</label>
+                        <select
+                          value={productForm.category_id}
+                          onChange={e => setProductForm({ ...productForm, category_id: e.target.value })}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 outline-none text-sm"
+                        >
+                          <option value="">Seleccionar...</option>
+                          {categories.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase font-black text-zinc-500 tracking-widest ml-1">Slug SEO</label>
+                        <input type="text" value={productForm.slug} onChange={e => setProductForm({ ...productForm, slug: e.target.value.toLowerCase().replace(/ /g, '-') })} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 outline-none text-sm" placeholder="url-amigable-producto" />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-black text-zinc-500 tracking-widest ml-1 text-glow-amber">Imagen del Producto</label>
+                      <div className="flex gap-4">
+                        <div
+                          onClick={() => imageInputRef.current?.click()}
+                          className="w-24 h-24 rounded-2xl bg-zinc-950 border-2 border-dashed border-zinc-800 flex items-center justify-center cursor-pointer hover:border-amber-500/50 group transition-all overflow-hidden relative"
+                        >
+                          {uploadingImage ? (
+                            <div className="flex flex-col items-center gap-1">
+                              <Loader2 size={24} className="animate-spin text-amber-500" />
+                              <span className="text-[8px] font-black uppercase text-amber-500">Pitting...</span>
+                            </div>
+                          ) : productForm.image_url ? (
+                            <>
+                              <img src={productForm.image_url} alt="Preview" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                <Upload size={20} className="text-white" />
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center gap-1 text-zinc-600 group-hover:text-amber-500 transition-colors">
+                              <Upload size={24} />
+                              <span className="text-[8px] font-black uppercase text-center">SUBIR<br />FOTO</span>
+                            </div>
+                          )}
+                          <input
+                            type="file"
+                            ref={imageInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            disabled={uploadingImage}
+                          />
+                        </div>
+                        <div className="flex-1 space-y-1.5">
+                          <label className="text-[8px] uppercase font-black text-zinc-600 tracking-widest ml-1">URL Directa (Opcional)</label>
+                          <input
+                            type="text"
+                            value={productForm.image_url}
+                            onChange={e => setProductForm({ ...productForm, image_url: e.target.value })}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 outline-none text-xs"
+                            placeholder="https://..."
+                          />
+                          <p className="text-[9px] text-zinc-500 italic px-1">Se recomienda subir una imagen cuadrada (1:1) de alta calidad.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button type="submit" disabled={submitting} className="w-full py-6 bg-amber-500 text-black rounded-2xl font-bold heading-racing text-3xl hover:bg-amber-400 transition-all shadow-[0_15px_40px_rgba(245,158,11,0.25)] flex items-center justify-center gap-4">
                 {submitting ? <Loader2 size={32} className="animate-spin" /> : <>GUARDAR EN CATÁLOGO <ChevronRight size={32} /></>}
               </button>
