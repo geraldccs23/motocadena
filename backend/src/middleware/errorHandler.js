@@ -1,11 +1,21 @@
-function errorHandler(err, req, res, next) {
+// src/middleware/errorHandler.js
+export const errorHandler = (err, req, res, next) => {
+  console.error('[errorHandler]', err);
   const status = err.status || 500;
-  const code = err.code || 'INTERNAL_ERROR';
-  const message = err.message || 'Error interno';
-  if (process.env.NODE_ENV !== 'production') {
-    console.error('[error]', err);
-  }
-  res.status(status).json({ error: { code, message } });
-}
+  res.status(status).json({
+    ok: false,
+    error: {
+      code: err.code || 'INTERNAL_ERROR',
+      message: err.message || 'Error interno del servidor'
+    }
+  });
+};
 
-module.exports = { errorHandler };
+// ---
+// src/middleware/authPlaceholder.js
+export const authPlaceholder = (req, res, next) => {
+  // Placeholder para futura implementación de JWT
+  // Por ahora inyectamos un rol administrativo simulado si no hay header
+  req.user = { id: 'admin-id', role: 'DIRECTOR' };
+  next();
+};

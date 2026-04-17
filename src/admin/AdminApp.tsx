@@ -17,6 +17,10 @@ const Appointments = lazy(() => import('./pages/Appointments'));
 const SalesReports = lazy(() => import('./pages/SalesReports'));
 const Budgets = lazy(() => import('./pages/Budgets'));
 const TechnicalGuides = lazy(() => import('./pages/TechnicalGuides'));
+const CashRegister = lazy(() => import('./pages/CashRegister'));
+const Expenses = lazy(() => import('./pages/Expenses'));
+const CxC = lazy(() => import('./pages/CxC'));
+const CxP = lazy(() => import('./pages/CxP'));
 
 const LoadingFallback = () => (
   <div className="h-screen w-full flex items-center justify-center bg-black text-amber-500">
@@ -44,6 +48,7 @@ const App: React.FC = () => {
           <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
           <Route path="/ordenes" element={<ProtectedRoute><Layout><WorkOrders /></Layout></ProtectedRoute>} />
           <Route path="/pos" element={<ProtectedRoute><Layout><POS /></Layout></ProtectedRoute>} />
+          <Route path="/caja" element={<ProtectedRoute><Layout><CashRegister /></Layout></ProtectedRoute>} />
           <Route path="/usuarios" element={<ProtectedRoute><Layout><Users /></Layout></ProtectedRoute>} />
           <Route path="/inventario" element={<ProtectedRoute><Layout><Inventory /></Layout></ProtectedRoute>} />
           <Route path="/servicios" element={<ProtectedRoute><Layout><Services /></Layout></ProtectedRoute>} />
@@ -52,6 +57,9 @@ const App: React.FC = () => {
           <Route path="/reportes-ventas" element={<ProtectedRoute><Layout><SalesReports /></Layout></ProtectedRoute>} />
           <Route path="/presupuestos" element={<ProtectedRoute><Layout><Budgets /></Layout></ProtectedRoute>} />
           <Route path="/manuales" element={<ProtectedRoute><Layout><TechnicalGuides /></Layout></ProtectedRoute>} />
+          <Route path="/egresos" element={<ProtectedRoute><Layout><Expenses /></Layout></ProtectedRoute>} />
+          <Route path="/cxc" element={<ProtectedRoute><Layout><CxC /></Layout></ProtectedRoute>} />
+          <Route path="/cxp" element={<ProtectedRoute><Layout><CxP /></Layout></ProtectedRoute>} />
           <Route path="/membresias" element={<ProtectedRoute><Layout><div className="glass-panel p-10 text-center rounded-3xl border border-white/5"><h2 className="heading-racing text-5xl text-amber-500">Módulo de Membresías</h2><p className="text-zinc-500 mt-2 font-medium">Planes VIP y lealtad próximamente.</p></div></Layout></ProtectedRoute>} />
           <Route path="/configuracion" element={<ProtectedRoute><Layout><div className="glass-panel p-10 text-center rounded-3xl border border-white/5"><h2 className="heading-racing text-5xl text-amber-500">Configuración</h2><p className="text-zinc-500 mt-2 font-medium">Ajustes del taller y sistema.</p></div></Layout></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />

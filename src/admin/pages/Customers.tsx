@@ -65,11 +65,14 @@ const Customers: React.FC = () => {
     setSubmitting(true);
     try {
       const { data: ws } = await supabase.from('workshops').select('id').limit(1).single();
-      const payload = {
+      const payload: any = {
         ...formData,
-        workshop_id: ws?.id,
-        referred_by_customer_id: formData.referred_by_customer_id || null
+        workshop_id: ws?.id
       };
+
+      if (!payload.referred_by_customer_id) {
+        delete payload.referred_by_customer_id;
+      }
 
       const { error: insertError } = await supabase
         .from('customers')

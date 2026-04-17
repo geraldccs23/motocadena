@@ -20,7 +20,12 @@ import {
   BookOpen,
   MoreHorizontal,
   X as CloseIcon,
-  FileText
+  FileText,
+  Landmark,
+  ArrowDownCircle,
+  TrendingDown,
+  ExternalLink,
+  ArrowUpRight
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -87,7 +92,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <>
               <SidebarItem to="/admin/inventario" icon={<Package size={20} />} label="Inventario" active={location.pathname.startsWith('/admin/inventario')} />
               <SidebarItem to="/admin/servicios" icon={<Layers size={20} />} label="Servicios" active={location.pathname.startsWith('/admin/servicios')} />
+              <SidebarItem to="/admin/caja" icon={<Landmark size={20} />} label="Caja" active={location.pathname === '/admin/caja'} />
               <SidebarItem to="/admin/pos" icon={<ShoppingCart size={20} />} label="POS Ventas" active={location.pathname === '/admin/pos'} />
+              <SidebarItem to="/admin/egresos" icon={<TrendingDown size={20} />} label="Egresos" active={location.pathname === '/admin/egresos'} />
+              <SidebarItem to="/admin/cxc" icon={<ArrowUpRight size={20} />} label="Cuentas x Cobrar" active={location.pathname === '/admin/cxc'} />
+              <SidebarItem to="/admin/cxp" icon={<ArrowDownCircle size={20} />} label="Cuentas x Pagar" active={location.pathname === '/admin/cxp'} />
               <SidebarItem to="/admin/reportes-ventas" icon={<BarChart3 size={20} />} label="Reportes" active={location.pathname === '/admin/reportes-ventas'} />
             </>
           )}

@@ -1,4 +1,4 @@
-const { supabase } = require('../../services/supabaseClient');
+import { supabase } from '../../services/supabaseClient.js';
 
 function makeError(status, message, code = 'BAD_REQUEST') {
   const e = new Error(message);
@@ -7,171 +7,96 @@ function makeError(status, message, code = 'BAD_REQUEST') {
   return e;
 }
 
-exports.listSales = async (req, res, next) => {
+export const list = async (req, res, next) => {
   try {
-    const { data, error } = await supabase.from('pos_sales').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('pos_sales')
+      .select('*, customers(first_name, last_name)')
+      .order('created_at', { ascending: false });
     if (error) throw makeError(500, error.message);
     res.json(data);
   } catch (err) { next(err); }
 };
 
-exports.createSale = async (req, res, next) => {
+export const getById = async (req, res, next) => {
   try {
-    const { client_id, notes, payment_method } = req.body;
-    const insert = { client_id: client_id || null, notes: notes || null, payment_method: payment_method || null };
-    const { data, error } = await supabase.from('pos_sales').insert([insert]).select();
-    if (error) throw makeError(500, error.message);
-    res.status(201).json(data?.[0] || null);
+    const { data: sale, error } = await supabase.from('pos_sales').select('*, pos_sale_items(*)').eq('id', req.params.id).single();
+    if (error) throw makeError(404, 'Venta no encontrada');
+    res.json(sale);
   } catch (err) { next(err); }
 };
 
-exports.getSaleById = async (req, res, next) => {
+export const checkout = async (req, res, next) => {
   try {
-    const id = req.params.id;
-    const { data: sale, error } = await supabase.from('pos_sales').select('*').eq('id', id).single();
-    if (error) throw makeError(404, error.message, 'NOT_FOUND');
-    const [{ data: items }, { data: payments }] = await Promise.all([
-      supabase.from('pos_sale_items').select('*').eq('sale_id', id).order('created_at', { ascending: false }),
-      supabase.from('pos_sale_payments').select('*').eq('sale_id', id).order('created_at', { ascending: false }),
-    ]);
-    res.json({ sale, items: items || [], payments: payments || [] });
-  } catch (err) { next(err); }
-};
+    const { customer_id, items, payments, total_amount, seller_id } = req.body;
 
-exports.addSaleItem = async (req, res, next) => {
-  try {
-    const sale_id = req.params.id;
-    const { product_id, service_id, work_order_id, description, quantity, unit_price } = req.body;
-    if (!product_id && !service_id && !work_order_id) throw makeError(400, 'Debe proveer product_id, service_id o work_order_id');
-    const insert = { sale_id, product_id: product_id || null, service_id: service_id || null, work_order_id: work_order_id || null, description: description || null, quantity: quantity ?? 1, unit_price: unit_price ?? 0 };
-    const { data, error } = await supabase.from('pos_sale_items').insert([insert]).select();
-    if (error) throw makeError(500, error.message);
-    res.status(201).json(data?.[0] || null);
-  } catch (err) { next(err); }
-};
+    if (!items || items.length === 0) throw makeError(400, 'La venta debe tener items');
+    
+    // Si hay un método 'CREDITO', marcamos la venta como crédito
+    const hasCredit = payments.some(p => p.method === 'CREDITO');
+    const isCredit = hasCredit || req.body.is_credit;
 
-exports.updateSaleItem = async (req, res, next) => {
-  try {
-    const sale_id = req.params.id;
-    const itemId = req.params.itemId;
-    const { product_id, service_id, work_order_id, description, quantity, unit_price } = req.body;
-    const update = {};
-    if (product_id !== undefined) update.product_id = product_id;
-    if (service_id !== undefined) update.service_id = service_id;
-    if (work_order_id !== undefined) update.work_order_id = work_order_id;
-    if (description !== undefined) update.description = description;
-    if (quantity !== undefined) update.quantity = quantity;
-    if (unit_price !== undefined) update.unit_price = unit_price;
-    const { data, error } = await supabase.from('pos_sale_items').update(update).eq('id', itemId).eq('sale_id', sale_id).select().single();
-    if (error) throw makeError(500, error.message);
-    res.json(data);
-  } catch (err) { next(err); }
-};
+    // 1. Obtener sesión de caja abierta
+    const { data: workshops } = await supabase.from('workshops').select('id').limit(1);
+    const wsId = workshops?.[0]?.id;
+    
+    const { data: session, error: sErr } = await supabase.from('cash_sessions')
+      .select('id').eq('workshop_id', wsId).eq('status', 'OPEN').maybeSingle();
+      
+    if (sErr || !session) throw makeError(400, 'DEBE tener un turno de caja abierto para procesar ventas.');
 
-exports.removeSaleItem = async (req, res, next) => {
-  try {
-    const sale_id = req.params.id;
-    const itemId = req.params.itemId;
-    const { data, error } = await supabase.from('pos_sale_items').delete().eq('id', itemId).eq('sale_id', sale_id).select().single();
-    if (error) throw makeError(500, error.message);
-    res.json({ ok: true, deleted: data });
-  } catch (err) { next(err); }
-};
+    // 2. Crear la Venta (Cabecera)
+    const { data: sale, error: saleErr } = await supabase.from('pos_sales').insert([{
+      workshop_id: wsId,
+      customer_id,
+      seller_id,
+      total_amount,
+      is_credit: isCredit
+    }]).select().single();
 
-exports.addPayment = async (req, res, next) => {
-  try {
-    const sale_id = req.params.id;
-    const { method, amount, currency, original_amount, bank, reference } = req.body;
-    if (!amount) throw makeError(400, 'amount es requerido');
-    const insert = {
-      sale_id,
-      method: method || 'cash',
-      amount,
-      currency: currency || 'USD',
-      original_amount: original_amount || amount,
-      bank: bank || null,
-      reference: reference || null
-    };
-    const { data, error } = await supabase.from('pos_sale_payments').insert([insert]).select();
-    if (error) throw makeError(500, error.message);
-    res.status(201).json(data?.[0] || null);
-  } catch (err) { next(err); }
-};
+    if (saleErr) throw makeError(500, 'Error creando venta: ' + saleErr.message);
 
-exports.markPaid = async (req, res, next) => {
-  try {
-    const id = req.params.id;
+    // 3. Crear Items
+    const saleItems = items.map(it => ({
+      sale_id: sale.id,
+      product_id: it.type === 'PRODUCT' ? it.id : null,
+      service_id: it.type === 'SERVICE' ? it.id : null,
+      quantity: it.quantity,
+      price: it.price
+    }));
 
-    // 1. Obtener la venta y sus items
-    const { data: sale, error: sErr } = await supabase.from('pos_sales').select('*').eq('id', id).single();
-    if (sErr) throw makeError(404, sErr.message, 'NOT_FOUND');
-    if (sale.status === 'paid') throw makeError(400, 'La venta ya ha sido pagada');
+    const { error: itemsErr } = await supabase.from('pos_sale_items').insert(saleItems);
+    if (itemsErr) throw makeError(500, 'Error insertando items: ' + itemsErr.message);
 
-    const { data: items, error: itErr } = await supabase.from('pos_sale_items').select('*').eq('sale_id', id);
-    if (itErr) throw makeError(500, itErr.message);
-
-    // 2. Actualizar estado
-    const { error: uErr } = await supabase.from('pos_sales').update({ status: 'paid' }).eq('id', id);
-    if (uErr) throw makeError(500, uErr.message);
-
-    // 3. Generar movimientos de inventario por cada producto (tipo 'out')
-    const movements = items
-      .filter(it => it.product_id) // Solo ítems que son productos
-      .map(it => ({
-        product_id: it.product_id,
-        movement_type: 'out',
-        quantity: it.quantity,
-        unit_cost: it.unit_price, // En ventas usamos el precio de venta como referencia de costo en movimiento si no hay otro
-        source: 'sale',
-        source_id: id
+    // 4. Registrar Pagos (Solo los que no sean 'CREDITO')
+    const realPayments = payments.filter(p => p.method !== 'CREDITO');
+    if (realPayments.length > 0) {
+      const salePayments = realPayments.map(p => ({
+        workshop_id: wsId,
+        cash_session_id: session.id,
+        sale_id: sale.id,
+        amount: p.amountUSD || p.amount,
+        currency: p.currency || 'USD',
+        method: p.method,
+        reference_code: p.reference || p.reference_code || null
       }));
 
-    if (movements.length > 0) {
-      const { error: mErr } = await supabase.from('inventory_movements').insert(movements);
-      if (mErr) throw makeError(500, mErr.message);
+      const { error: payErr } = await supabase.from('payments').insert(salePayments);
+      if (payErr) throw makeError(500, 'Error registrando abonos: ' + payErr.message);
     }
 
-    res.json({ ok: true, message: 'Venta pagada e inventario actualizado' });
-  } catch (err) { next(err); }
-};
+    // 5. Ajuste de Inventario
+    for (const item of items) {
+      if (item.type === 'PRODUCT') {
+        await supabase.rpc('process_inventory_movement', {
+          p_product_id: item.id,
+          p_warehouse_id: null,
+          p_movement_type: 'out',
+          p_quantity: item.quantity,
+          p_notes: `Venta POS #${sale.id.slice(0,8)}`
+        });
+      }
+    }
 
-exports.markVoid = async (req, res, next) => {
-  try {
-    const id = req.params.id;
-    const { data, error } = await supabase.from('pos_sales').update({ status: 'void' }).eq('id', id).select().single();
-    if (error) throw makeError(500, error.message);
-    res.json(data);
-  } catch (err) { next(err); }
-};
-
-exports.createReturn = async (req, res, next) => {
-  try {
-    const { sale_id, notes } = req.body;
-    if (!sale_id) throw makeError(400, 'sale_id es requerido');
-    const { data, error } = await supabase.from('pos_returns').insert([{ sale_id, notes: notes || null, status: 'completed' }]).select();
-    if (error) throw makeError(500, error.message);
-    res.status(201).json(data?.[0] || null);
-  } catch (err) { next(err); }
-};
-
-exports.getReturnById = async (req, res, next) => {
-  try {
-    const id = req.params.id;
-    const { data: ret, error } = await supabase.from('pos_returns').select('*').eq('id', id).single();
-    if (error) throw makeError(404, error.message, 'NOT_FOUND');
-    const { data: items, error: e2 } = await supabase.from('pos_return_items').select('*').eq('return_id', id).order('created_at', { ascending: false });
-    if (e2) throw makeError(500, e2.message);
-    res.json({ return: ret, items });
-  } catch (err) { next(err); }
-};
-
-exports.addReturnItem = async (req, res, next) => {
-  try {
-    const return_id = req.params.id;
-    const { sale_item_id, product_id, service_id, quantity, unit_price } = req.body;
-    const insert = { return_id, sale_item_id: sale_item_id || null, product_id: product_id || null, service_id: service_id || null, quantity: quantity ?? 1, unit_price: unit_price ?? 0 };
-    const { data, error } = await supabase.from('pos_return_items').insert([insert]).select();
-    if (error) throw makeError(500, error.message);
-    res.status(201).json(data?.[0] || null);
+    res.status(201).json({ ok: true, sale_id: sale.id });
   } catch (err) { next(err); }
 };

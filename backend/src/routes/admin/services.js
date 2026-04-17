@@ -1,11 +1,8 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const ServicesController = require('../../controllers/admin/servicesController');
+import * as controller from '../../controllers/admin/servicesController.js';
 
-router.get('/', ServicesController.list);
-router.get('/:id', ServicesController.getById);
-router.post('/', ServicesController.create);
-router.put('/:id', ServicesController.update);
-router.delete('/:id', ServicesController.remove);
+router.get('/', controller.list);
+router.post('/', controller.create);
 
-module.exports = router;
+export default router;

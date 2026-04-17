@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Zap, LogIn, Menu, X, MapPin } from 'lucide-react';
+import { Shield, Zap, LogIn, LogOut, Menu, X, MapPin } from 'lucide-react';
 import ServicesSection from './ServicesSection';
 import ShopSection from './ShopSection';
 import Badge from './ui/Badge';
@@ -11,6 +11,7 @@ interface PublicWebsiteProps {
   onNavigateToSponsors?: () => void;
   onNavigateToAdmin?: () => void;
   onNavigateToScooter?: () => void;
+  onNavigateToPortal?: () => void;
   initialSection?: string;
 }
 
@@ -18,6 +19,7 @@ const PublicWebsite: React.FC<PublicWebsiteProps> = ({
   onNavigateToSponsors,
   onNavigateToAdmin,
   onNavigateToScooter,
+  onNavigateToPortal,
   initialSection,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -60,9 +62,12 @@ const PublicWebsite: React.FC<PublicWebsiteProps> = ({
             </button>
             <a href="#membresias" className="text-zinc-400 hover:text-amber-500 transition-colors">Membresías</a>
             <a href="#lealtad" className="text-zinc-400 hover:text-amber-500 transition-colors">Lealtad</a>
-            <Button variant="outline" size="sm" onClick={onNavigateToAdmin} className="gap-2">
+            <Button variant="outline" size="sm" onClick={onNavigateToPortal} className="gap-2">
+              <LogOut className="w-3.5 h-3.5" />
+              PORTAL CLIENTES
+            </Button>
+            <Button variant="outline" size="sm" onClick={onNavigateToAdmin} className="gap-2 border-zinc-800 text-zinc-500">
               <LogIn className="w-3.5 h-3.5" />
-              ACCESO STAFF
             </Button>
           </nav>
 
@@ -85,9 +90,12 @@ const PublicWebsite: React.FC<PublicWebsiteProps> = ({
           <a href="#membresias" onClick={closeMenu} className="text-2xl font-black heading-racing tracking-widest text-zinc-400 hover:text-amber-500">MEMBRESÍAS</a>
           <a href="#lealtad" onClick={closeMenu} className="text-2xl font-black heading-racing tracking-widest text-zinc-400 hover:text-amber-500">LEALTAD</a>
           <div className="w-full h-px bg-zinc-800 my-4" />
-          <Button size="lg" variant="primary" onClick={onNavigateToAdmin} className="w-full gap-3 h-16 text-xl tracking-widest">
+          <Button size="lg" variant="primary" onClick={onNavigateToPortal} className="w-full gap-3 h-16 text-xl tracking-widest">
+            PORTAL DE CLIENTES
+          </Button>
+          <Button size="lg" variant="outline" onClick={onNavigateToAdmin} className="w-full gap-3 h-16 text-xl tracking-widest border-zinc-800 text-zinc-500">
             <LogIn size={24} />
-            ACCESO STAFF
+            STAFF
           </Button>
           <a
             href={GOOGLE_MAPS_LINK}

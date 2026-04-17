@@ -6,6 +6,7 @@ import ScooterPage from './components/ScooterPage';
 import PublicBudgetView from './components/PublicBudgetView';
 
 const AdminApp = lazy(() => import('./admin/AdminApp'));
+const PortalApp = lazy(() => import('./portal/PortalApp'));
 
 function App() {
   const navigate = useNavigate();
@@ -24,6 +25,10 @@ function App() {
     navigate('/scooter');
   };
 
+  const handleNavigateToPortal = () => {
+    navigate('/portal/login');
+  };
+
   const handleNavigateToAdmin = () => {
     navigate('/admin');
   };
@@ -38,8 +43,8 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<PublicWebsite onNavigateToSponsors={handleNavigateToSponsors} onNavigateToAdmin={handleNavigateToAdmin} onNavigateToScooter={handleNavigateToScooter} />} />
-      <Route path="/tienda" element={<PublicWebsite onNavigateToSponsors={handleNavigateToSponsors} onNavigateToAdmin={handleNavigateToAdmin} onNavigateToScooter={handleNavigateToScooter} initialSection="tienda" />} />
+      <Route path="/" element={<PublicWebsite onNavigateToSponsors={handleNavigateToSponsors} onNavigateToAdmin={handleNavigateToAdmin} onNavigateToScooter={handleNavigateToScooter} onNavigateToPortal={handleNavigateToPortal} />} />
+      <Route path="/tienda" element={<PublicWebsite onNavigateToSponsors={handleNavigateToSponsors} onNavigateToAdmin={handleNavigateToAdmin} onNavigateToScooter={handleNavigateToScooter} onNavigateToPortal={handleNavigateToPortal} initialSection="tienda" />} />
       <Route path="/sponsors" element={<SponsorsPresentation />} />
       <Route path="/scooter" element={<ScooterPage />} />
       <Route path="/presupuesto/:id" element={<PublicBudgetView />} />
@@ -50,6 +55,15 @@ function App() {
           </div>
         }>
           <AdminApp />
+        </Suspense>
+      } />
+      <Route path="/portal/*" element={
+        <Suspense fallback={
+          <div className="h-screen w-full flex items-center justify-center bg-zinc-950 text-amber-500 font-bold">
+            ACCEDIENDO AL GARAJE...
+          </div>
+        }>
+          <PortalApp />
         </Suspense>
       } />
     </Routes>

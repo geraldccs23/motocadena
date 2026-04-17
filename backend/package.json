@@ -2,6 +2,7 @@
   "name": "motocadena-backend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Backend API for Motocadena (Express + Supabase)",
   "main": "server.js",
   "scripts": {

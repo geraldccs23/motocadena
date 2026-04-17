@@ -30,21 +30,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initialized = useRef(false);
 
     const fetchProfile = useCallback(async (userId: string, email: string) => {
-        console.log("🔍 AuthContext: Fetching profile for", email);
+        console.log("🔍 AuthContext: Fetching profile for", email, "with ID:", userId);
 
-        // Safety timeout to prevent permanent hang
+        // Safety timeout - increased for better reliability on slower connections
         const timeoutId = setTimeout(() => {
             if (loading) {
-                console.warn("⏱️ AuthContext: Profile fetch timed out, using fallback.");
-                setProfile({
-                    ...MOCK_PROFILE,
-                    id: userId,
-                    full_name: email.split('@')[0].toUpperCase(),
-                    email: email
-                });
-                setLoading(false);
+                console.warn("⏱️ AuthContext: Profile fetch is taking too long (15s). Still waiting...");
             }
-        }, 5000);
+        }, 15000);
 
         try {
             const { data, error } = await supabase
@@ -57,23 +50,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (error) {
                 console.error("❌ AuthContext: Error fetching profile:", error);
+                throw error;
             }
 
-            if (data && !error) {
-                console.log("✅ AuthContext: Profile loaded:", data.full_name);
+            if (data) {
+                console.log("✅ AuthContext: Profile loaded successfully:", data.full_name);
                 setProfile(data as UserProfile);
             } else {
-                console.warn("⚠️ AuthContext: No profile in DB, using fallback.");
+                console.warn("⚠️ AuthContext: No profile record found for this ID in 'user_profiles'.");
+                // Only use fallback if we are SURE it's missing from DB
                 setProfile({
                     ...MOCK_PROFILE,
                     id: userId,
-                    full_name: email.split('@')[0].toUpperCase(),
-                    email: email
+                    full_name: email.split('@')[0].toUpperCase() + ' (PENDIENTE)',
+                    email: email,
+                    role: 'VENDEDOR' // More restricted default role
                 });
             }
-        } catch (e) {
+        } catch (e: any) {
             clearTimeout(timeoutId);
-            console.error("❌ AuthContext: Critical failure in fetchProfile:", e);
+            console.error("❌ AuthContext: Critical failure in fetchProfile:", e.message);
+            // Fallback as last resort for critical errors
+            setProfile({
+                ...MOCK_PROFILE,
+                id: userId,
+                full_name: email.split('@')[0].toUpperCase() + ' (FALLBACK)',
+                email: email
+            });
         } finally {
             setLoading(false);
         }

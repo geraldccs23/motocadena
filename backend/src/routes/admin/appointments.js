@@ -1,13 +1,9 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const AppointmentsController = require('../../controllers/admin/appointmentsController');
+import * as controller from '../../controllers/admin/appointmentsController.js';
 
-router.get('/', AppointmentsController.list);
-router.post('/', AppointmentsController.create);
-router.get('/:id', AppointmentsController.getById);
-router.put('/:id', AppointmentsController.update);
-router.post('/:id/confirm', AppointmentsController.confirm);
-router.post('/:id/cancel', AppointmentsController.cancel);
-router.get('/:id/work-order', AppointmentsController.getGeneratedWorkOrder);
+router.get('/', controller.list);
+router.post('/', controller.create);
+router.get('/:id', controller.getById);
 
-module.exports = router;
+export default router;

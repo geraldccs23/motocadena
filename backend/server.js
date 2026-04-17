@@ -1,34 +1,27 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const morgan = require('morgan');
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import morgan from 'morgan';
 
-const { errorHandler } = require('./src/middleware/errorHandler');
-const { authPlaceholder } = require('./src/middleware/authPlaceholder');
+import { errorHandler } from './src/middleware/errorHandler.js';
+import { supabase } from './src/services/supabaseClient.js';
 
-// Routers
-const adminClientsRouter = require('./src/routes/admin/clients');
-const adminVehiclesRouter = require('./src/routes/admin/vehicles');
-const adminMechanicsRouter = require('./src/routes/admin/mechanics');
-const adminServicesRouter = require('./src/routes/admin/services');
-const adminWorkOrdersRouter = require('./src/routes/admin/workOrders');
-const adminInspectionsRouter = require('./src/routes/admin/inspections');
-const adminAppointmentsRouter = require('./src/routes/admin/appointments');
-const adminProductsRouter = require('./src/routes/admin/products');
-const adminSuppliersRouter = require('./src/routes/admin/suppliers');
-const adminPurchasesRouter = require('./src/routes/admin/purchases');
-const adminInventoryRouter = require('./src/routes/admin/inventory');
-const adminPosRouter = require('./src/routes/admin/pos');
-const adminReportsRouter = require('./src/routes/admin/reports');
-
-const publicOrdersRouter = require('./src/routes/public/orders');
-const publicServicesRouter = require('./src/routes/public/services');
-const publicAppointmentsRouter = require('./src/routes/public/appointments');
+// Routers (ESM)
+import cashSessionsRouter from './src/routes/admin/cashSessions.js';
+import posRouter from './src/routes/admin/pos.js';
+import workOrdersRouter from './src/routes/admin/workOrders.js';
+import appointmentsRouter from './src/routes/admin/appointments.js';
+import productsRouter from './src/routes/admin/products.js';
+import inventoryRouter from './src/routes/admin/inventory.js';
+import servicesRouter from './src/routes/admin/services.js';
+import customersRouter from './src/routes/admin/clients.js'; // We will refactor this to use 'customers' table
+import expensesRouter from './src/routes/admin/expenses.js';
+import portalRouter from './src/routes/public/portal.js';
 
 const app = express();
 const PORT = process.env.PORT || 3003;
 
-// Configuración de CORS más robusta
+// CORS
 const allowedOrigins = [
   'https://motocadena.com',
   'https://www.motocadena.com',
@@ -37,83 +30,48 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Permitir requests sin origin (como apps móviles o curl)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
       callback(null, true);
     } else {
-      console.warn(`[CORS] Intento de acceso bloqueado desde origen no permitido: ${origin}`);
-      callback(null, false); // Denegar silenciosamente en lugar de lanzar Error
+      callback(null, false);
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Role'],
-  optionsSuccessStatus: 200 // Estado de éxito para el preflight (OPTIONS)
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Role']
 }));
 
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Health & Diagnostics
-const { supabase } = require('./src/services/supabaseClient');
+// Health
 app.get('/health', async (req, res) => {
-  try {
-    const start = Date.now();
-    const { data, error } = await supabase.from('products').select('id').limit(1);
-    const dbStatus = error ? `Error: ${error.message}` : 'Connected';
-    res.json({
-      ok: true,
-      service: 'motocadena-backend',
-      db: dbStatus,
-      latency: `${Date.now() - start}ms`,
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
-  }
+  const { error } = await supabase.from('workshops').select('id').limit(1);
+  res.json({
+    ok: true,
+    db: error ? `Error: ${error.message}` : 'Connected',
+    timestamp: new Date().toISOString()
+  });
 });
 
-// Exchange Rate (Placeholder/Static for now)
-app.get('/admin/rate', (req, res) => {
-  res.json({ ok: true, exchange_rate: 60.0 }); // Default rate for testing
-});
+// Admin Routes
+const adminPrefix = '/api/admin';
+app.use(`${adminPrefix}/cash-sessions`, cashSessionsRouter);
+app.use(`${adminPrefix}/pos`, posRouter);
+app.use(`${adminPrefix}/work-orders`, workOrdersRouter);
+app.use(`${adminPrefix}/appointments`, appointmentsRouter);
+app.use(`${adminPrefix}/products`, productsRouter);
+app.use(`${adminPrefix}/inventory`, inventoryRouter);
+app.use(`${adminPrefix}/services`, servicesRouter);
+app.use(`${adminPrefix}/customers`, customersRouter);
+app.use(`${adminPrefix}/expenses`, expensesRouter);
 
-// Auth placeholder (no bloquea nada por ahora)
-app.use(authPlaceholder);
+// Portal Routes
+app.use('/api/portal', portalRouter);
 
-// Admin Users Router (New)
-const adminUsersRouter = require('./src/routes/admin/users');
-
-// Soporte para ambos prefijos /admin y /api/admin
-const adminPrefixes = ['/admin', '/api/admin'];
-
-adminPrefixes.forEach(prefix => {
-  app.use(prefix, adminUsersRouter);
-  app.use(`${prefix}/clients`, adminClientsRouter);
-  app.use(`${prefix}/vehicles`, adminVehiclesRouter);
-  app.use(`${prefix}/mechanics`, adminMechanicsRouter);
-  app.use(`${prefix}/services`, adminServicesRouter);
-  app.use(`${prefix}/work-orders`, adminWorkOrdersRouter);
-  app.use(`${prefix}/inspections`, adminInspectionsRouter);
-  app.use(`${prefix}/appointments`, adminAppointmentsRouter);
-  app.use(`${prefix}/products`, adminProductsRouter);
-  app.use(`${prefix}/suppliers`, adminSuppliersRouter);
-  app.use(`${prefix}/purchases`, adminPurchasesRouter);
-  app.use(`${prefix}/inventory`, adminInventoryRouter);
-  app.use(`${prefix}/pos`, adminPosRouter);
-  app.use(`${prefix}/reports`, adminReportsRouter);
-});
-
-// Public routes
-app.use('/public/orders', publicOrdersRouter);
-app.use('/public/services', publicServicesRouter);
-app.use('/public/appointments', publicAppointmentsRouter);
-
-// Error handler
+// Error Handler
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`[motocadena-backend] listening on port ${PORT}`);
+  console.log(`[motocadena-v2-backend] listening on port ${PORT}`);
 });

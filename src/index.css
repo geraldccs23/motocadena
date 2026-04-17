@@ -106,12 +106,34 @@
 
   .glass-panel {
     @apply bg-zinc-900/40 backdrop-blur-xl border border-white/5;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+  }
+
+  .glass-card {
+    @apply bg-neutral-900/60 backdrop-blur-md border border-white/10 rounded-2xl;
+    @apply transition-all duration-300 hover:bg-neutral-900/80 hover:border-amber-500/30;
+  }
+
+  .premium-border {
+    position: relative;
+    border-radius: inherit;
+  }
+
+  .premium-border::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(135deg, rgba(212, 165, 116, 0.5), transparent, rgba(212, 165, 116, 0.2));
+    border-radius: inherit;
+    z-index: -1;
+    pointer-events: none;
   }
 
   .heading-racing {
     font-family: 'Teko', sans-serif;
     font-weight: 700;
     letter-spacing: 0.08em;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
   }
 
   .text-racing {
@@ -119,27 +141,5 @@
     font-weight: 600;
     letter-spacing: 0.05em;
   }
-
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: #d4a574 #1a1a1a;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: #1a1a1a;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: #d4a574;
-    border-radius: 4px;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: #c89456;
-  }
 }
+

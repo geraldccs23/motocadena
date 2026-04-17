@@ -1,15 +1,11 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const ClientsController = require('../../controllers/admin/clientsController');
+import * as controller from '../../controllers/admin/clientsController.js';
 
-// CRUD clientes
-router.get('/', ClientsController.list);
-router.post('/', ClientsController.create);
-router.get('/:id', ClientsController.getById);
-router.put('/:id', ClientsController.update);
-router.delete('/:id', ClientsController.remove);
+router.get('/', controller.list);
+router.post('/', controller.create);
+router.get('/:id', controller.getById);
+router.put('/:id', controller.update);
+router.delete('/:id', controller.remove);
 
-// Vehículos por cliente (ruta requerida)
-router.get('/:id/vehicles', ClientsController.listVehiclesByClient);
-
-module.exports = router;
+export default router;
