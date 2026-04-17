@@ -66,7 +66,11 @@ const WorkOrders: React.FC = () => {
       const { data, error: fetchError } = await supabase
         .from('work_orders')
         .select(`
-          *, 
+          id, workshop_id, vehicle_id, customer_id, advisor_id, mechanic_id,
+          status, mileage, fault_description, diagnostic,
+          total_labor, total_parts, total_amount, billing_status,
+          initial_inspection, final_inspection,
+          created_at, updated_at,
           customer:customers(*), 
           vehicle:vehicles(*), 
           mechanic:user_profiles!mechanic_id(*)
@@ -111,7 +115,11 @@ const WorkOrders: React.FC = () => {
       const { data, error } = await supabase
         .from('work_orders')
         .select(`
-          *,
+          id, workshop_id, vehicle_id, customer_id, advisor_id, mechanic_id,
+          status, mileage, fault_description, diagnostic,
+          total_labor, total_parts, total_amount, billing_status,
+          initial_inspection, final_inspection,
+          created_at, updated_at,
           customer:customers(*),
           vehicle:vehicles(*),
           mechanic:user_profiles!mechanic_id(*),
@@ -214,6 +222,7 @@ const WorkOrders: React.FC = () => {
     setSubmitting(true);
     try {
       const payload = {
+        workshop_id: profile?.workshop_id,
         customer_id: selectedCustomer.id,
         vehicle_id: selectedVehicle.id,
         advisor_id: profile?.id,
